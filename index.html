@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <meta charset="UTF-8" />
   <title>Three.js básico</title>
@@ -51,6 +52,16 @@
   box-shadow: 0 4px 15px rgba(0,0,0,0.4);
   z-index: 100;
 ">Ver códigos</button>
+
+<!-- Botón para escanear QR -->
+<button id="btnEscanearQR" style="
+  position: fixed; bottom: 25px; right: 550px;
+  padding: 15px 22px; background: #b84a7a; color: white;
+  border: none; border-radius: 50px; cursor: pointer;
+  font-family: Arial; font-size: 16px; font-weight: bold;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+  z-index: 100;
+">📷 Escanear QR</button>
 
 <!-- Overlay oscuro (fondo) -->
 <div id="overlay" style="
@@ -507,6 +518,47 @@
     background: #444; color: white; border: none;
     border-radius: 8px; cursor: pointer; font-size: 14px;
   ">Cerrar</button>
+</div>
+<!-- Modal del escáner de QR -->
+<div id="panelEscaner" style="
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1e1e2e; color: white;
+  padding: 25px; border-radius: 16px;
+  font-family: Arial;
+  width: 90%; max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  display: none; z-index: 400;
+  text-align: center;
+">
+  <h2 style="margin: 0 0 15px 0; font-size: 20px;">
+    📷 Escanear código QR
+  </h2>
+
+  <p style="color: #aaa; font-size: 13px; margin-bottom: 20px;">
+    Apunta la cámara al código QR del item, estante o slot.
+  </p>
+
+  <!-- Lector de QR -->
+  <div id="lectorQR" style="
+    width: 100%; border-radius: 12px;
+    overflow: hidden; background: #000;
+    margin-bottom: 20px;
+  "></div>
+
+  <!-- Estado -->
+  <p id="estadoEscaner" style="
+    color: #4aff4a; font-size: 13px; margin-bottom: 20px;
+  ">Iniciando cámara...</p>
+
+  <!-- Botón cerrar -->
+  <button id="btnCerrarEscaner" style="
+    width: 100%; padding: 12px;
+    background: #444; color: white; border: none;
+    border-radius: 8px; cursor: pointer; font-size: 14px;
+  ">Cancelar</button>
 </div>
 </body>
 </html>

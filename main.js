@@ -936,7 +936,8 @@ const btnEscanearItem        = document.getElementById('btnEscanearItem');
 
 // Cache de todos los items (para no consultar Supabase cada vez)
 let todosLosItems = [];
-let itemActualEnFicha = null;  
+let itemActualEnFicha = null; 
+let callbackEscaner = null; 
 
 // --- Abrir el panel ---
 btnVerInventario.addEventListener('click', async () => {
@@ -1249,13 +1250,89 @@ function actualizarResumen() {
   }
 }
 
-// --- Botones de escanear (placeholder por ahora) ---
 btnEscanearEstante.addEventListener('click', () => {
-  alert('📷 Escáner con cámara próximamente.\n\nPor ahora, escribe el código del estante manualmente.');
+  // Guardar que el resultado debe ir al campo de estante destino
+  callbackEscaner = (textoQR) => {
+    // Extraer el slot del QR
+    try {
+      const url = new URL(textoQR);
+      const slot = url.searchParams.get('slot');
+      if (slot) {
+        inputEstanteDestino.value = slot;
+        // Disparar el evento input para que se active el paso 2
+        inputEstanteDestino.dispatchEvent(new Event('input'));
+        console.log('📍 Slot escaneado:', slot);
+      } else {
+        alert('❌ Este QR no es de un slot de estante');
+      }
+    } catch {
+      // Si no es URL, asumir que es el código directo
+      inputEstanteDestino.value = textoQR;
+      inputEstanteDestino.dispatchEvent(new Event('input'));
+    }
+  };
+
+  // Abrir escáner con este callback
+  abrirEscanerConCallback();
 });
+
 btnEscanearItem.addEventListener('click', () => {
-  alert('📷 Escáner con cámara próximamente.\n\nPor ahora, escribe el código del item manualmente.');
+  callbackEscaner = (textoQR) => {
+    try {
+      const url = new URL(textoQR);
+      const id = url.searchParams.get('id');
+      if (id) {
+        inputItemMover.value = id;
+        inputItemMover.dispatchEvent(new Event('input'));
+        console.log('📦 Item escaneado:', id);
+      } else {
+        alert('❌ Este QR no es de un item');
+      }
+    } catch {
+      inputItemMover.value = textoQR;
+      inputItemMover.dispatchEvent(new Event('input'));
+    }
+  };
+
+  abrirEscanerConCallback();
 });
+
+// --- Función auxiliar: abre el escáner pero usando el callback guardado ---
+async function abrirEscanerConCallback() {
+  panelEscaner.style.display = 'block';
+  overlay.style.display = 'block';
+  estadoEscaner.textContent = 'Iniciando cámara...';
+
+  try {
+    escanerActivo = new Html5Qrcode("lectorQR");
+
+    await escanerActivo.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      (textoQR) => {
+        console.log('📱 QR escaneado:', textoQR);
+        estadoEscaner.textContent = '✅ QR detectado';
+        
+        // Cerrar escáner
+        cerrarEscaner();
+
+        // Llamar al callback específico
+        if (callbackEscaner) {
+          callbackEscaner(textoQR);
+          callbackEscaner = null;
+        } else {
+          manejarQR(textoQR);
+        }
+      },
+      () => {}
+    );
+
+    estadoEscaner.textContent = '🔍 Apunta al QR...';
+  } catch (err) {
+    console.error('Error al iniciar la cámara:', err);
+    estadoEscaner.textContent = '❌ No se pudo acceder a la cámara';
+  }
+}
 
 // --- Confirmar el movimiento ---
 btnConfirmarMoverQR.addEventListener('click', async () => {
@@ -1713,4 +1790,138 @@ function renderizarItemsEstante(items) {
 
     listaItemsEstante.appendChild(card);
   });
+}
+// ============================================
+// ESCÁNER DE QR CON CÁMARA
+// ============================================
+const panelEscaner    = document.getElementById('panelEscaner');
+const lectorQR        = document.getElementById('lectorQR');
+const estadoEscaner   = document.getElementById('estadoEscaner');
+const btnEscanearQR   = document.getElementById('btnEscanearQR');
+const btnCerrarEscaner = document.getElementById('btnCerrarEscaner');
+
+let escanerActivo = null;
+
+// --- Abrir el escáner ---
+btnEscanearQR.addEventListener('click', () => {
+  abrirEscaner();
+});
+
+async function abrirEscaner() {
+  panelEscaner.style.display = 'block';
+  overlay.style.display = 'block';
+  estadoEscaner.textContent = 'Iniciando cámara...';
+
+  try {
+    escanerActivo = new Html5Qrcode("lectorQR");
+
+    await escanerActivo.start(
+      { facingMode: "environment" },   // cámara trasera
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 }
+      },
+      (textoQR) => {
+        // Éxito al escanear
+        console.log('📱 QR escaneado:', textoQR);
+        estadoEscaner.textContent = '✅ QR detectado';
+        manejarQR(textoQR);
+      },
+      (error) => {
+        // Errores de escaneo (ignorar, son normales)
+      }
+    );
+
+    estadoEscaner.textContent = '🔍 Apunta al QR...';
+  } catch (err) {
+    console.error('Error al iniciar la cámara:', err);
+    estadoEscaner.textContent = '❌ No se pudo acceder a la cámara';
+  }
+}
+
+// --- Cerrar el escáner ---
+btnCerrarEscaner.addEventListener('click', async () => {
+  await cerrarEscaner();
+});
+
+async function cerrarEscaner() {
+  if (escanerActivo) {
+    try {
+      await escanerActivo.stop();
+      escanerActivo.clear();
+    } catch (e) {
+      console.warn('Error al cerrar escáner:', e);
+    }
+    escanerActivo = null;
+  }
+  panelEscaner.style.display = 'none';
+  overlay.style.display = 'none';
+}
+
+// --- Procesar el QR escaneado ---
+async function manejarQR(textoQR) {
+  // Detener la cámara
+  await cerrarEscaner();
+
+  // Analizar el contenido del QR
+  let url;
+  try {
+    url = new URL(textoQR);
+  } catch {
+    // Si no es URL, mostrar el texto plano
+    alert(`QR detectado: ${textoQR}`);
+    return;
+  }
+
+  const idItem = url.searchParams.get('id');
+  const idSlot = url.searchParams.get('slot');
+  const idEstante = url.searchParams.get('estante');
+
+  // --- Caso 1: QR de item ---
+  if (idItem) {
+    console.log('📦 Item escaneado:', idItem);
+    const item = await buscarItemPorCodigo(idItem);
+    if (item) {
+      abrirFicha(item);
+    } else {
+      alert(`❌ No se encontró el item: ${idItem}`);
+    }
+    return;
+  }
+
+  // --- Caso 2: QR de slot ---
+  if (idSlot) {
+    console.log('📍 Slot escaneado:', idSlot);
+    const match = idSlot.match(/^(EST-[A-Z]+-\d+)-R(\d+)-([A-Z])$/);
+    if (!match) {
+      alert(`❌ Formato de slot inválido: ${idSlot}`);
+      return;
+    }
+
+    const estante = match[1];
+    const repisa = parseInt(match[2]);
+    const seccion = match[3];
+
+    const itemsDesdeBD = await obtenerTodos();
+    const itemsDelSlot = itemsDesdeBD.filter(i =>
+      i.estante === estante &&
+      i.repisa === repisa &&
+      i.seccion === seccion
+    );
+
+    abrirPanelEstante(idSlot, itemsDelSlot, { estante, repisa, seccion });
+    return;
+  }
+
+  // --- Caso 3: QR de estante completo ---
+  if (idEstante) {
+    console.log('📦 Estante escaneado:', idEstante);
+    const itemsDesdeBD = await obtenerTodos();
+    const itemsDelEstante = itemsDesdeBD.filter(i => i.estante === idEstante);
+    abrirPanelEstante(idEstante, itemsDelEstante);
+    return;
+  }
+
+  // --- Caso 4: QR desconocido ---
+  alert(`QR reconocido pero sin parámetros conocidos:\n${textoQR}`);
 }
