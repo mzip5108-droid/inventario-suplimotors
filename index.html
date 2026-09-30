@@ -3,14 +3,118 @@
 <head>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta charset="UTF-8" />
-  <title>Three.js básico</title>
-  <style>
-    /* Quita márgenes y hace que el canvas ocupe toda la pantalla */
-    body { margin: 0; overflow: hidden; background: #111; }
-    canvas { display: block; }
-  </style>
+  <title>Inventario SupliMotors</title>
+<style>
+  body { margin: 0; overflow: hidden; background: #111; }
+  canvas { display: block; }
+
+  /* ============================================
+     ESTILOS RESPONSIVE PARA MÓVIL
+     ============================================ */
+
+  /* Los botones flotantes en móvil se reorganizan */
+  @media (max-width: 768px) {
+    /* Botones flotantes más chicos y agrupados abajo */
+    #btnAbrirPanel,
+    #btnVerInventario,
+    #btnVerCodigos,
+    #btnEscanearQR {
+      padding: 10px 12px !important;
+      font-size: 11px !important;
+      bottom: 15px !important;
+      right: auto !important;
+      left: auto !important;
+      transform: none !important;
+    }
+
+    #btnAbrirPanel     { left: 10px !important; }
+    #btnVerInventario  { left: 33% !important; }
+    #btnVerCodigos     { left: 56% !important; }
+    #btnEscanearQR     { left: 79% !important; }
+
+    /* Paneles más anchos en móvil */
+    #panelRegistro,
+    #panelInventario,
+    #panelFicha,
+    #panelMoverQR,
+    #panelCodigos,
+    #panelEstante,
+    #panelEscaner {
+      width: 95% !important;
+      max-width: 95% !important;
+      padding: 18px !important;
+      max-height: 90vh !important;
+    }
+
+    /* Textos más grandes en móvil */
+    #panelRegistro h2,
+    #panelInventario h2,
+    #panelFicha h2,
+    #panelMoverQR h2,
+    #panelCodigos h2,
+    #panelEstante h2,
+    #panelEscaner h2 {
+      font-size: 18px !important;
+    }
+
+    /* Inputs más grandes para dedos */
+    #panelRegistro input,
+    #panelRegistro select,
+    #panelInventario input,
+    #panelMoverQR input,
+    #panelCodigos input,
+    #panelEstante input {
+      font-size: 16px !important;
+      padding: 12px !important;
+    }
+
+    /* Botones más grandes */
+    #panelRegistro button,
+    #panelInventario button,
+    #panelFicha button,
+    #panelMoverQR button,
+    #panelCodigos button,
+    #panelEstante button,
+    #panelEscaner button {
+      font-size: 15px !important;
+      padding: 14px !important;
+    }
+
+    /* Listas en 1 columna */
+    #listaItems,
+    #listaItemsEstante {
+      grid-template-columns: 1fr !important;
+    }
+
+    /* Códigos en 2 columnas */
+    #listaCodigos {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Ficha con QR más grande */
+    #fichaQR canvas {
+      width: 200px !important;
+      height: 200px !important;
+    }
+  }
+
+  /* Pantallas muy chicas (menos de 400px) */
+  @media (max-width: 400px) {
+    #listaCodigos {
+      grid-template-columns: 1fr !important;
+    }
+
+    #btnAbrirPanel,
+    #btnVerInventario,
+    #btnVerCodigos,
+    #btnEscanearQR {
+      font-size: 10px !important;
+      padding: 8px 6px !important;
+    }
+  }
+</style>
 </head>
 <body>
   <!-- Carga main.js como módulo (obligatorio para usar import) -->
