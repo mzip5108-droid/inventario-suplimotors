@@ -219,7 +219,7 @@ function crearEstante(ancho = 2, alto = 2.2, profundo = 0.5, repisas = 5, column
       separador.receiveShadow = true;
       grupo.add(separador);
     }
-
+  }
   // Sombras
   grupo.traverse(obj => {
     if (obj.isMesh) {
