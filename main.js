@@ -676,6 +676,11 @@ function cerrarPanel() {
   qrPreview.innerHTML = '';
   document.getElementById('inputNombre').value = '';
   document.getElementById('inputCantidad').value = '1';
+
+  document.getElementById('inputEstante').value = '';
+  document.getElementById('inputRepisa').value = '0';
+  document.getElementById('inputSeccion').value = 'A';
+  document.getElementById('avisoUbicacion').style.display = 'none';
 }
 
 btnCerrar.addEventListener('click', cerrarPanel);
@@ -694,6 +699,10 @@ btnRegist.addEventListener('click', async () => {
   // Validación
   if (!nombre) {
     alert('Ponle un nombre al item');
+    return;
+  }
+    if (!estante) {
+    alert('📍 Debes escanear el QR del estante antes de registrar');
     return;
   }
 
@@ -1924,3 +1933,89 @@ async function manejarQR(textoQR) {
   // --- Caso 4: QR desconocido ---
   alert(`QR reconocido pero sin parámetros conocidos:\n${textoQR}`);
 }
+
+// ============================================
+// ESCANEAR UBICACIÓN AL REGISTRAR ITEM
+// ============================================
+const btnEscanearUbicacion  = document.getElementById('btnEscanearUbicacion');
+const avisoUbicacion        = document.getElementById('avisoUbicacion');
+const linkUbicacionManual   = document.getElementById('linkUbicacionManual');
+
+// --- Función que procesa el código de ubicación (del QR o manual) ---
+function procesarUbicacion(codigo) {
+  const match = codigo.trim().match(/^(EST-[A-Z]+-\d+)-R(\d+)-([A-Z])$/);
+  
+  if (!match) {
+    alert('❌ Formato inválido.\nDebe ser: EST-IZQ-01-R2-E');
+    return false;
+  }
+
+  const [, estanteId, repisa, seccion] = match;
+
+  // Verificar que el estante esté configurado
+  if (!INFO_ESTANTES[estanteId]) {
+    alert(`❌ El estante "${estanteId}" no está configurado en el sistema.`);
+    return false;
+  }
+
+  // Rellenar los inputs ocultos
+  document.getElementById('inputEstante').value = estanteId;
+  document.getElementById('inputRepisa').value = parseInt(repisa);
+  document.getElementById('inputSeccion').value = seccion;
+
+  // Mostrar aviso
+  avisoUbicacion.textContent = `✅ ${codigo.trim()}`;
+  avisoUbicacion.style.display = 'block';
+
+  console.log('📍 Ubicación detectada:', codigo.trim());
+  return true;
+}
+
+// --- Botón de escanear QR de ubicación ---
+btnEscanearUbicacion.addEventListener('click', () => {
+  callbackEscaner = (textoQR) => {
+    try {
+      const url = new URL(textoQR);
+      const slot = url.searchParams.get('slot');
+      const estante = url.searchParams.get('estante');
+
+      // Caso 1: QR de slot
+      if (slot) {
+        procesarUbicacion(slot);
+        return;
+      }
+
+      // Caso 2: QR de estante completo (por defecto repisa 0, sección A)
+      if (estante) {
+        if (!INFO_ESTANTES[estante]) {
+          alert(`❌ El estante "${estante}" no está configurado.`);
+          return;
+        }
+        document.getElementById('inputEstante').value = estante;
+        document.getElementById('inputRepisa').value = 0;
+        document.getElementById('inputSeccion').value = 'A';
+        avisoUbicacion.textContent = `✅ ${estante} (por defecto R0-A)`;
+        avisoUbicacion.style.display = 'block';
+        return;
+      }
+
+      alert('❌ Este QR no es de un estante o slot');
+    } catch {
+      // Si no es URL, intentar procesarlo como código directo
+      procesarUbicacion(textoQR);
+    }
+  };
+
+  abrirEscanerConCallback();
+});
+
+// --- Enlace de escribir manualmente ---
+linkUbicacionManual.addEventListener('click', (e) => {
+  e.preventDefault();
+  const codigo = prompt(
+    'Escribe el código del slot donde va el item:\n\n' +
+    'Ejemplo: EST-IZQ-01-R2-E'
+  );
+  if (!codigo) return;
+  procesarUbicacion(codigo);
+});
