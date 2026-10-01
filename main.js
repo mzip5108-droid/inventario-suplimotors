@@ -745,6 +745,9 @@ btnRegist.addEventListener('click', async () => {
 
   // --- Crear el objeto 3D en la escena ---
   crearObjetoDesdeItem(itemGuardado);
+
+  todosLosItems.unshift(itemGuardado);
+
 });
 
 // --- Mostrar el QR en el panel ---
