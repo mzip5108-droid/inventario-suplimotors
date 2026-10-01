@@ -38,7 +38,7 @@ document.body.appendChild(renderer.domElement);
 
 
 // ============================================
-// 5) ENVIRONMENT MAP (para que el metal brille)
+// 5)para que el metal brille
 // ============================================
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
 scene.environment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
@@ -159,11 +159,11 @@ const matMadera = new THREE.MeshStandardMaterial({
 // 10) FUNCIÓN: ESTANTE METÁLICO
 // ============================================
 /**
- * Crea un estante metálico tipo rack, abierto por ambos lados.
- * @param {number} ancho    - Ancho total (eje X)
- * @param {number} alto     - Alto total (eje Y)
- * @param {number} profundo - Profundidad (eje Z)
- * @param {number} repisas  - Cuántas repisas horizontales
+ * estante
+ * @param {number} ancho    
+ * @param {number} alto     
+ * @param {number} profundo 
+ * @param {number} repisas  
  * @returns {THREE.Group}
  */
 function crearEstante(ancho = 2, alto = 2.2, profundo = 0.5, repisas = 5) {
@@ -189,7 +189,7 @@ function crearEstante(ancho = 2, alto = 2.2, profundo = 0.5, repisas = 5) {
     grupo.add(paral);
   });
 
-  // --- Repisas horizontales (sin fondo) ---
+  // --- Repisas horizontales  ---
   const repisaGeo = new THREE.BoxGeometry(ancho, grosorRepisa, profundo);
   for (let i = 0; i < repisas; i++) {
     const repisa = new THREE.Mesh(repisaGeo, matRepisa);
@@ -1261,9 +1261,9 @@ btnEscanearEstante.addEventListener('click', () => {
         inputEstanteDestino.value = slot;
         // Disparar el evento input para que se active el paso 2
         inputEstanteDestino.dispatchEvent(new Event('input'));
-        console.log('📍 Slot escaneado:', slot);
+        console.log(' Slot escaneado:', slot);
       } else {
-        alert('❌ Este QR no es de un slot de estante');
+        alert(' Este QR no es de un slot de estante');
       }
     } catch {
       // Si no es URL, asumir que es el código directo
@@ -1311,7 +1311,7 @@ async function abrirEscanerConCallback() {
       { fps: 10, qrbox: { width: 250, height: 250 } },
       (textoQR) => {
         console.log('📱 QR escaneado:', textoQR);
-        estadoEscaner.textContent = '✅ QR detectado';
+        estadoEscaner.textContent = ' QR detectado';
         
         // Cerrar escáner
         cerrarEscaner();
@@ -1327,10 +1327,10 @@ async function abrirEscanerConCallback() {
       () => {}
     );
 
-    estadoEscaner.textContent = '🔍 Apunta al QR...';
+    estadoEscaner.textContent = ' Apunta al QR...';
   } catch (err) {
     console.error('Error al iniciar la cámara:', err);
-    estadoEscaner.textContent = '❌ No se pudo acceder a la cámara';
+    estadoEscaner.textContent = ' No se pudo acceder a la cámara';
   }
 }
 
@@ -1347,7 +1347,7 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
   
   if (!match) {
     alert(
-      '❌ Formato de estante inválido.\n\n' +
+      ' Formato de estante inválido.\n\n' +
       'Debe ser: EST-XXX-##-R#-X\n' +
       'Ejemplo: EST-IZQ-01-R2-E'
     );
@@ -1363,7 +1363,7 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
   // --- Verificar que el estante existe en INFO_ESTANTES ---
   if (!INFO_ESTANTES[estante]) {
     alert(
-      `❌ El estante "${estante}" no está configurado en el sistema.\n\n` +
+      ` El estante "${estante}" no está configurado en el sistema.\n\n` +
       `Solo están disponibles: ${Object.keys(INFO_ESTANTES).join(', ')}`
     );
     return;
@@ -1373,7 +1373,7 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
   const item = await buscarItemPorCodigo(codigoItem);
 
   if (!item) {
-    alert(`❌ No existe un item con el código "${codigoItem}".`);
+    alert(` No existe un item con el código "${codigoItem}".`);
     return;
   }
 
@@ -1381,7 +1381,7 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
   const actualizado = await actualizarUbicacion(codigoItem, estante, repisa, seccion);
 
   if (!actualizado) {
-    alert('❌ Error al actualizar. Mira la consola.');
+    alert(' Error al actualizar. Mira la consola.');
     return;
   }
 
@@ -1390,7 +1390,7 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
   if (objeto3D) {
     const nuevaPos = calcularPosicionSlot(estante, repisa, seccion);
     objeto3D.position.set(...nuevaPos);
-    console.log('🎁 Objeto 3D movido a:', nuevaPos);
+    console.log(' Objeto 3D movido a:', nuevaPos);
   }
 
   // --- Actualizar la lista local ---
@@ -1405,7 +1405,7 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
     ` Nueva ubicación: ${estante}-R${repisa}-${seccion}`
   );
 
-  console.log('✅ Movimiento completado');
+  console.log('  Movimiento completado');
 
   // --- Cerrar y volver al inventario ---
   cerrarMoverQR();
@@ -1644,7 +1644,7 @@ if (idSlot) {
     // Parsear el código del slot: EST-IZQ-01-R2-E
     const match = idSlot.match(/^(EST-[A-Z]+-\d+)-R(\d+)-([A-Z])$/);
     if (!match) {
-      console.warn('❌ Formato de slot inválido:', idSlot);
+      console.warn(' Formato de slot inválido:', idSlot);
       return;
     }
 
@@ -1654,7 +1654,7 @@ if (idSlot) {
 
     const info = INFO_ESTANTES[estante];
     if (!info) {
-      console.warn('❌ Estante no configurado:', estante);
+      console.warn(' Estante no configurado:', estante);
       return;
     }
 
@@ -1668,7 +1668,7 @@ if (idSlot) {
       i.seccion === seccion
     );
 
-    console.log(`✅ ${itemsDelSlot.length} items en ${idSlot}`);
+    console.log(` ${itemsDelSlot.length} items en ${idSlot}`);
     abrirPanelEstante(idSlot, itemsDelSlot, { estante, repisa, seccion });
   })();
 }
@@ -1753,25 +1753,7 @@ function renderizarItemsEstante(items) {
       transition: transform 0.15s, background 0.15s;
     `;
 
-    const emojiCat = {
-      herramientas: '🔧', fijaciones: '🔩', electrico: '⚡',
-      plomeria: '🚿', pintura: '🎨', seguridad: '🦺', general: '📦'
-    }[item.categoria] || '📦';
-
-    card.innerHTML = `
-      <div style="font-weight:bold; font-size:14px; margin-bottom:5px;">
-        ${emojiCat} ${item.nombre}
-      </div>
-      <div style="font-size:11px; color:#aaa; margin-bottom:3px;">
-        Código: ${item.codigo}
-      </div>
-      <div style="font-size:11px; color:#aaa; margin-bottom:3px;">
-        📍 ${item.estante}-R${item.repisa}-${item.seccion}
-      </div>
-      <div style="font-size:11px; color:#4aff4a;">
-        Cantidad: ${item.cantidad}
-      </div>
-    `;
+   
 
     // Al hacer clic, abre la ficha del item
     card.addEventListener('click', () => {
@@ -1832,10 +1814,10 @@ async function abrirEscaner() {
       }
     );
 
-    estadoEscaner.textContent = '🔍 Apunta al QR...';
+    estadoEscaner.textContent = ' Apunta al QR...';
   } catch (err) {
     console.error('Error al iniciar la cámara:', err);
-    estadoEscaner.textContent = '❌ No se pudo acceder a la cámara';
+    estadoEscaner.textContent = ' No se pudo acceder a la cámara';
   }
 }
 
@@ -1879,22 +1861,22 @@ async function manejarQR(textoQR) {
 
   // --- Caso 1: QR de item ---
   if (idItem) {
-    console.log('📦 Item escaneado:', idItem);
+    console.log(' Item escaneado:', idItem);
     const item = await buscarItemPorCodigo(idItem);
     if (item) {
       abrirFicha(item);
     } else {
-      alert(`❌ No se encontró el item: ${idItem}`);
+      alert(` No se encontró el item: ${idItem}`);
     }
     return;
   }
 
   // --- Caso 2: QR de slot ---
   if (idSlot) {
-    console.log('📍 Slot escaneado:', idSlot);
+    console.log(' Slot escaneado:', idSlot);
     const match = idSlot.match(/^(EST-[A-Z]+-\d+)-R(\d+)-([A-Z])$/);
     if (!match) {
-      alert(`❌ Formato de slot inválido: ${idSlot}`);
+      alert(` Formato de slot inválido: ${idSlot}`);
       return;
     }
 
@@ -1915,7 +1897,7 @@ async function manejarQR(textoQR) {
 
   // --- Caso 3: QR de estante completo ---
   if (idEstante) {
-    console.log('📦 Estante escaneado:', idEstante);
+    console.log(' Estante escaneado:', idEstante);
     const itemsDesdeBD = await obtenerTodos();
     const itemsDelEstante = itemsDesdeBD.filter(i => i.estante === idEstante);
     abrirPanelEstante(idEstante, itemsDelEstante);

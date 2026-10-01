@@ -20,11 +20,11 @@ export async function registrarItem({ nombre, categoria, cantidad, estante, repi
     .select();
 
   if (error) {
-    console.error('❌ Error al registrar:', error.message);
+    console.error(' Error al registrar:', error.message);
     return null;
   }
 
-  console.log('✅ Item registrado:', data[0]);
+  console.log(' Item registrado:', data[0]);
   return data[0];
 }
 
@@ -37,11 +37,11 @@ export async function buscarItemPorCodigo(codigo) {
     .single();
 
   if (error) {
-    console.warn('❌ Item no encontrado:', codigo);
+    console.warn(' Item no encontrado:', codigo);
     return null;
   }
 
-  console.log('✅ Item encontrado:', data);
+  console.log(' Item encontrado:', data);
   return data;
 }
 
@@ -53,7 +53,7 @@ export async function obtenerTodos() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('❌ Error al obtener items:', error.message);
+    console.error(' Error al obtener items:', error.message);
     return [];
   }
 
@@ -68,11 +68,11 @@ export async function eliminarItem(codigo) {
     .select();
 
   if (error) {
-    console.error('❌ Error al eliminar:', error.message);
+    console.error(' Error al eliminar:', error.message);
     return false;
   }
 
-  console.log('🗑️ Item eliminado:', codigo);
+  console.log(' Item eliminado:', codigo);
   return true;
 }
 // Actualizar la ubicación de un item
@@ -84,10 +84,10 @@ export async function actualizarUbicacion(codigo, estante, repisa, seccion) {
     .select();
 
   if (error) {
-    console.error('❌ Error al actualizar ubicación:', error.message);
+    console.error(' Error al actualizar ubicación:', error.message);
     return null;
   }
 
-  console.log('📍 Ubicación actualizada:', data[0]);
+  console.log(' Ubicación actualizada:', data[0]);
   return data[0];
 }
