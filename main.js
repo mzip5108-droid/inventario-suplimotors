@@ -949,7 +949,7 @@ function crearCajaItem(color, tamaño, indice) {
 // ============================================
 function colorPorCategoria(categoria) {
   const colores = {
-    herramientas: 0x3366cc,
+    Bombadeaceite: 0x3366cc,
     fijaciones:   0xaa3333,
     electrico:    0x33aa77,
     plomeria:     0x66ccaa,
