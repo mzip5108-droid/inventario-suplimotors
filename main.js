@@ -872,49 +872,39 @@ function crearObjetoDesdeItem(item) {
 
   // --- Decidir cómo distribuir los items ---
 
-  const usarApilado = cantidad > 3;
-
-  // Tamaño de cada item (más chico si hay muchos)
-  const tamItem = usarApilado ? 0.2 : 0.25;
+  // Tamaño de cada item
+  const tamItem = 0.2;
   const alturaItem = tamItem;
 
-  if (usarApilado) {
-    // ========================================
-    // MODO APILADO: los items van uno encima de otro
-    // ========================================
-    for (let i = 0; i < cantidad; i++) {
-      const caja = crearCajaItem(color, tamItem, i);
-      
-      // Posición: mismo X y Z, Y escalonada
-      caja.position.set(
-        posBase[0],
-        posBase[1] + (i * alturaItem),   // apilar
-        posBase[2]
-      );
-      
-      // Pequeña rotación aleatoria para variación natural
-      caja.rotation.y = (Math.random() - 0.5) * 0.3;
-      
-      grupo.add(caja);
-    }
-  } else {
-    // ========================================
-    // MODO FILA: los items van uno al lado del otro
-    // ========================================
-    const espaciado = tamItem + 0.05;
-    const anchoTotal = cantidad * espaciado;
-    
-    for (let i = 0; i < cantidad; i++) {
-      const caja = crearCajaItem(color, tamItem, i);
-      
-      // Distribuir a lo largo del ancho de la celda
-      const offsetX = -anchoTotal / 2 + espaciado * (i + 0.5);
-      
-      caja.position.set(
-        posBase[0] + offsetX,           // distribuir en X
-        posBase[1] + alturaItem / 2,
-        posBase[2]
-      );
+  // Agrupar los items en torres de máximo 3
+  const itemsPorTorre = 3;
+  const numTorres = Math.ceil(cantidad / itemsPorTorre);
+
+  for (let i = 0; i < cantidad; i++) {
+    const caja = crearCajaItem(color, tamItem, i);
+
+    // Calcular a qué torre pertenece y en qué nivel
+    const torreIndex = Math.floor(i / itemsPorTorre);   // 0, 1, 2, 3...
+    const nivel = i % itemsPorTorre;                     // 0, 1, 2
+
+    // Distribuir las torres en cuadrícula
+    const col = torreIndex % 3;                          // 0, 1, 2
+    const fila = Math.floor(torreIndex / 3) % 3;         // 0, 1, 2
+
+    const offsetX = (col - 1) * 0.2;      // -0.2, 0, +0.2
+    const offsetZ = (fila - 1) * 0.15;    // -0.15, 0, +0.15
+
+    caja.position.set(
+      posBase[0] + offsetX,
+      posBase[1] + (nivel * alturaItem),
+      posBase[2] + offsetZ
+    );
+
+    // Pequeña rotación
+    caja.rotation.y = (Math.random() - 0.5) * 0.2;
+
+    grupo.add(caja);
+  }
       
       // Ligera rotación
       caja.rotation.y = (Math.random() - 0.5) * 0.2;
