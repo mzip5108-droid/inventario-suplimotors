@@ -852,7 +852,6 @@ console.log('  R3-E:', calcularPosicionSlot('EST-IZQ-01', 3, 'E'));
 // ============================================
 // CREAR OBJETO 3D A PARTIR DE UN ITEM
 // ============================================
-
 function crearObjetoDesdeItem(item) {
   const color = colorPorCategoria(item.categoria);
   const cantidad = Math.min(item.cantidad || 1, 10);
@@ -870,15 +869,10 @@ function crearObjetoDesdeItem(item) {
   // --- Datos del estante y la celda ---
   const anchoCelda = info.ancho / info.columnas;
   const repisaY    = (item.repisa || 0) * ALTURA_REPISA + 0.05;
-  const tamItem    = 0.2;
-  const alturaItem = tamItem * 0.9;    // altura entre cajas apiladas
+  const tamItem    = 0.18;
+  const alturaItem = tamItem * 1.0;
 
-  // --- Separación entre items (grupos) en la fila ---
-  const anchoItemConSep = 0.26;        // cada item ocupa 0.26 de ancho
-  const margenIzq       = 0.15;
-  const itemsPorFila    = Math.max(1, Math.floor((anchoCelda - margenIzq * 2) / anchoItemConSep));
-
-  // --- Cuántos items (grupos) ya existen en esta celda ---
+  // --- Cuántos items (torres) ya existen en esta celda ---
   let itemsEnSlot = 0;
   scene.children.forEach(hijo => {
     if (hijo.isGroup && hijo.userData
@@ -890,37 +884,40 @@ function crearObjetoDesdeItem(item) {
     }
   });
 
-  // --- Índice de la celda en el ancho del estante ---
-  const indiceColumna = info.letras.indexOf(item.seccion);
-  const offsetCeldaLocalX = info.ancho / 2 - anchoCelda * (indiceColumna + 0.5);
+  // --- Cuántos items TOTALES habrá en esta celda ---
+  const totalItems = itemsEnSlot + 1;
+
+  // --- Ancho disponible para cada item dentro de la celda ---
+  // Dejamos un margen de 0.1 a cada lado de la celda
+  const margenCelda = 0.1;
+  const anchoDisponible = anchoCelda - margenCelda * 2;
+  const anchoPorItem = anchoDisponible / totalItems;
+
+  // --- Índice del item dentro de la celda ---
+  const miIndice = itemsEnSlot;
+
+  // --- Posición X LOCAL del item (dentro del ancho del estante) ---
+  // Cada item ocupa un "carril" de anchoPorItem, empezando por la izquierda
+  const offsetLocalX = info.ancho / 2
+                     - anchoCelda * (info.letras.indexOf(item.seccion) + 1)
+                     + margenCelda
+                     + anchoPorItem * (miIndice + 0.5);
+  const offsetLocalZ = 0;
 
   // --- Rotación del estante ---
   const cos = Math.cos(info.rotacionY);
   const sin = Math.sin(info.rotacionY);
 
-  // --- Este item ocupa UNA posición en la fila ---
-  const miIndice     = itemsEnSlot;
-  const col          = miIndice % itemsPorFila;
-  const fila         = Math.floor(miIndice / itemsPorFila);
-
-  // --- Offset local del item dentro del estante ---
-  const offsetLocalX = offsetCeldaLocalX
-                     - anchoCelda / 2
-                     + margenIzq
-                     + (col * anchoItemConSep)
-                     + (tamItem / 2);
-  const offsetLocalZ = fila * 0.25;
-
-  // --- Aplicar rotación del estante ---
+  // --- Aplicar rotación al offset local ---
   const xLocal = offsetLocalX * cos - offsetLocalZ * sin;
   const zLocal = offsetLocalX * sin + offsetLocalZ * cos;
 
-  // --- Posición base del item dentro de la escena ---
+  // --- Posición base del item ---
   const posX = info.x + xLocal;
   const posZ = info.z + zLocal;
   const posY = info.y + repisaY;
 
-  // --- Crear tantas cajas como indique la cantidad (apiladas) ---
+  // --- Apilar tantas cajas como indique la cantidad ---
   for (let n = 0; n < cantidad; n++) {
     const caja = crearCajaItem(color, tamItem, n);
 
