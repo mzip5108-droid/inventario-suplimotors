@@ -853,99 +853,126 @@ console.log('  R3-E:', calcularPosicionSlot('EST-IZQ-01', 3, 'E'));
 // CREAR OBJETO 3D A PARTIR DE UN ITEM
 // ============================================
 function crearObjetoDesdeItem(item) {
-  const color = colorPorCategoria(item.categoria);
-  const cantidad = Math.min(item.cantidad || 1, 10);
-
-  const grupo = new THREE.Group();
-  grupo.name = item.codigo;
-  grupo.userData = item;
-
   const info = INFO_ESTANTES[item.estante];
   if (!info) {
     console.warn('⚠️ Estante no configurado:', item.estante);
-    return grupo;
+    const grupoVacio = new THREE.Group();
+    grupoVacio.name = item.codigo;
+    return grupoVacio;
   }
 
-  // --- Datos del estante y la celda ---
-  const anchoCelda = info.ancho / info.columnas;
-  const repisaY    = (item.repisa || 0) * ALTURA_REPISA + 0.05;
-  const tamItem    = 0.18;
-  const alturaItem = tamItem * 1.0;
+  // ============================================================
+  // 1. Recolectar TODOS los items de esa celda (incluido el nuevo)
+  // ============================================================
+  const codigosEnCelda = new Set();
 
-  // --- Cuántos items (grupos) ya existen en esta celda ---
-  let itemsEnSlot = 0;
+  // Buscar en la escena los items que ya están en la misma celda
   scene.children.forEach(hijo => {
     if (hijo.isGroup && hijo.userData
         && hijo.userData.estante === item.estante
         && hijo.userData.repisa === item.repisa
-        && hijo.userData.seccion === item.seccion
-        && hijo.name !== item.codigo) {
-      itemsEnSlot++;
+        && hijo.userData.seccion === item.seccion) {
+      codigosEnCelda.add(hijo.name);
     }
   });
 
-  // --- Cuántos items TOTALES habrá en esta celda ---
-  const totalItems = itemsEnSlot + 1;
+  // Añadir el item nuevo
+  codigosEnCelda.add(item.codigo);
 
-  // --- Cuánto espacio del ancho de la celda usa cada item ---
-  const margenCelda = 0.1;
+  // ============================================================
+  // 2. Eliminar los grupos existentes de esa celda (los volveremos a crear)
+  // ============================================================
+  const gruposABorrar = [];
+  scene.children.forEach(hijo => {
+    if (hijo.isGroup && codigosEnCelda.has(hijo.name)) {
+      gruposABorrar.push(hijo);
+    }
+  });
+  gruposABorrar.forEach(g => scene.remove(g));
+
+  // ============================================================
+  // 3. Recolectar los DATOS de todos los items de la celda
+  //    (desde todosLosItems y añadiendo el nuevo)
+  // ============================================================
+  const itemsEnCelda = [];
+
+  // Buscar en todosLosItems los items que están en esta celda
+  todosLosItems.forEach(i => {
+    if (i.estante === item.estante
+        && i.repisa === item.repisa
+        && i.seccion === item.seccion
+        && i.codigo !== item.codigo) {
+      itemsEnCelda.push(i);
+    }
+  });
+
+  // Añadir el item nuevo al final (o al principio, pero siempre incluirlo)
+  itemsEnCelda.push(item);
+
+  // Si el item que estamos creando es el actual, ya lo tenemos en el array
+  // ordenamos por código para que sea consistente
+  itemsEnCelda.sort((a, b) => a.codigo.localeCompare(b.codigo));
+
+  // ============================================================
+  // 4. Calcular el layout: cuánto ancho tiene cada item
+  // ============================================================
+  const anchoCelda = info.ancho / info.columnas;
+  const repisaY    = (item.repisa || 0) * ALTURA_REPISA + 0.05;
+  const tamItem    = 0.18;
+  const alturaItem = tamItem * 1.0;
+  const margenCelda = 0.15;                    // margen a los lados de la celda
+  const totalItems = itemsEnCelda.length;
   const anchoDisponible = anchoCelda - margenCelda * 2;
   const anchoPorItem = anchoDisponible / totalItems;
 
-  // --- Índice del item dentro de la celda ---
-  const miIndice = itemsEnSlot;
-
-  // ============================================================
-  // CALCULAR LA POSICIÓN LOCAL DEL ITEM DENTRO DEL ESTANTE
-  // (Antes de aplicar la rotación del estante)
-  // ============================================================
-
-  // 1. Centro LOCAL de la celda en el eje X del estante
+  // Índice de la celda en el ancho del estante
   const indiceColumna = info.letras.indexOf(item.seccion);
   const centroCeldaLocalX = info.ancho / 2 - anchoCelda * (indiceColumna + 0.5);
-
-  // 2. Offset DENTRO de la celda
-  //    Vamos desde el borde izquierdo de la celda hacia la derecha.
-  //    El borde izquierdo de la celda está en:
-  //    centroCeldaLocalX - anchoCelda / 2
   const bordeIzqCelda = centroCeldaLocalX - anchoCelda / 2;
-  const offsetDentroCelda = margenCelda + anchoPorItem * (miIndice + 0.5);
 
-  // 3. Posición local final en el eje X del estante
-  const offsetLocalX = bordeIzqCelda + offsetDentroCelda;
-
-  // 4. Posición local en Z (dentro del estante, el "frente" del estante)
-  const offsetLocalZ = 0;
-
-  // ============================================================
-  // APLICAR LA ROTACIÓN DEL ESTANTE
-  // ============================================================
+  // Rotación del estante
   const cos = Math.cos(info.rotacionY);
   const sin = Math.sin(info.rotacionY);
 
-  const xMundo = info.x + offsetLocalX * cos - offsetLocalZ * sin;
-  const zMundo = info.z + offsetLocalX * sin + offsetLocalZ * cos;
-  const yMundo = info.y + repisaY;
-
   // ============================================================
-  // CREAR LAS CAJAS (apiladas según la cantidad)
+  // 5. Crear cada item con su carril asignado
   // ============================================================
-  for (let n = 0; n < cantidad; n++) {
-    const caja = crearCajaItem(color, tamItem, n);
+  const gruposCreados = [];
 
-    caja.position.set(
-      xMundo,
-      yMundo + (n * alturaItem),
-      zMundo
-    );
+  itemsEnCelda.forEach((it, idx) => {
+    const color = colorPorCategoria(it.categoria);
+    const cantidad = Math.min(it.cantidad || 1, 10);
 
-    caja.rotation.y = 0;
-    grupo.add(caja);
-  }
+    const grupo = new THREE.Group();
+    grupo.name = it.codigo;
+    grupo.userData = it;
 
-  scene.add(grupo);
-  console.log(`🎁 Objeto creado: ${item.estante}-R${item.repisa}-${item.seccion} (cantidad ${cantidad})`);
-  return grupo;
+    // Posición local del item dentro de la celda
+    const offsetDentroCelda = margenCelda + anchoPorItem * (idx + 0.5);
+    const offsetLocalX = bordeIzqCelda + offsetDentroCelda;
+    const offsetLocalZ = 0;
+
+    // Aplicar rotación del estante
+    const xMundo = info.x + offsetLocalX * cos - offsetLocalZ * sin;
+    const zMundo = info.z + offsetLocalX * sin + offsetLocalZ * cos;
+    const yMundo = info.y + repisaY;
+
+    // Crear las cajas apiladas
+    for (let n = 0; n < cantidad; n++) {
+      const caja = crearCajaItem(color, tamItem, n);
+      caja.position.set(xMundo, yMundo + (n * alturaItem), zMundo);
+      caja.rotation.y = 0;
+      grupo.add(caja);
+    }
+
+    scene.add(grupo);
+    gruposCreados.push(grupo);
+  });
+
+  console.log(`🎁 Celda ${item.estante}-R${item.repisa}-${item.seccion}: ${totalItems} items recolocados`);
+
+  // Devolver el grupo del item que se acaba de crear
+  return gruposCreados.find(g => g.name === item.codigo);
 }
 // ============================================
 // Helper: crear una caja de item individual
@@ -2553,6 +2580,7 @@ function actualizarResumenMover() {
 }
 // --- EXPONER VARIABLES PARA DIAGNÓSTICO ---
 window.__debug = {
+  THREE,
   scene,
   camera,
   INFO_ESTANTES,
