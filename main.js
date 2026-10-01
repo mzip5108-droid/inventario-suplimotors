@@ -905,21 +905,15 @@ function crearObjetoDesdeItem(item) {
 
     grupo.add(caja);
   }
-      
-      // Ligera rotación
-      caja.rotation.y = (Math.random() - 0.5) * 0.2;
-      
-      grupo.add(caja);
-    }
-  }
+
 
   scene.add(grupo);
 
   const codigoUbic = generarCodigoUbicacion(item.estante, item.repisa || 0, item.seccion || 'E');
   console.log(`🎁 Objeto creado: ${codigoUbic} (${cantidad} items)`);
   return grupo;
-
 }
+
 
 // ============================================
 // Helper: crear una caja de item individual
