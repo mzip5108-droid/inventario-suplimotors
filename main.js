@@ -166,7 +166,7 @@ const matMadera = new THREE.MeshStandardMaterial({
  * @param {number} repisas  
  * @returns {THREE.Group}
  */
-function crearEstante(ancho = 2, alto = 2.2, profundo = 0.5, repisas = 5) {
+function crearEstante(ancho = 2, alto = 2.2, profundo = 0.5, repisas = 5, columnas = 1) {
   const grupo = new THREE.Group();
   const grosorRepisa = 0.04;
   const grosorParal  = 0.06;
@@ -201,7 +201,24 @@ function crearEstante(ancho = 2, alto = 2.2, profundo = 0.5, repisas = 5) {
   // --- Refuerzos cruzados en los laterales ---
   const refuerzoGeo = new THREE.BoxGeometry(0., alto * 1., 0);
 
+ // --- Separadores verticales entre columnas  ---
+  if (columnas > 1) {
+    const grosorSeparador = 0.03;   
+    const anchoColumna = ancho / columnas;
 
+    for (let i = 1; i < columnas; i++) {
+      const xLocal = -ancho / 2 + anchoColumna * i;
+
+      // Separador vertical que cruza toda la altura
+      const separador = new THREE.Mesh(
+        new THREE.BoxGeometry(grosorSeparador, alto, profundo),
+        matParal.clone()   // mismo material que los parales
+      );
+      separador.position.set(xLocal, alto / 2, 0);
+      separador.castShadow = true;
+      separador.receiveShadow = true;
+      grupo.add(separador);
+    }
 
   // Sombras
   grupo.traverse(obj => {
@@ -220,7 +237,7 @@ function crearEstante(ancho = 2, alto = 2.2, profundo = 0.5, repisas = 5) {
 // ============================================
 
 // Estante en la pared IZQUIERDA, mirando hacia adentro (+x)
-const estanteIzq = crearEstante(17, 3, 0.4, 4);
+const estanteIzq = crearEstante(17, 3, 0.4, 4, 9);
 estanteIzq.name ='EST-IZQ-01'
 estanteIzq.position.set(-ANCHO_CUARTO / 2 + GROSOR_PARED / 2 + 0.3, 0, 0);
 estanteIzq.rotation.y = Math.PI / 2;
