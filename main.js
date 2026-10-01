@@ -1308,29 +1308,7 @@ inputItemMover.addEventListener('input', () => {
 
 // --- Actualizar el resumen (vista previa) ---
 function actualizarResumen() {
-  const estante = inputEstanteDestino.value.trim();
-  const item = inputItemMover.value.trim();
-
-  if (estante && item) {
-    resumenMover.style.display = 'block';
-    resumenMover.innerHTML = `
-      <p style="margin: 0 0 8px 0; font-weight: bold; color: #4aff4a;">
-        ✅ Listo para mover
-      </p>
-      <p style="margin: 4px 0; font-size: 12px;">
-        <span style="color:#aaa;">Item:</span> <b>${item}</b>
-      </p>
-      <p style="margin: 4px 0; font-size: 12px;">
-        <span style="color:#aaa;">Destino:</span> <b>${estante}</b>
-      </p>
-    `;
-    btnConfirmarMoverQR.style.opacity = '1';
-    btnConfirmarMoverQR.style.pointerEvents = 'auto';
-  } else {
-    resumenMover.style.display = 'none';
-    btnConfirmarMoverQR.style.opacity = '0.5';
-    btnConfirmarMoverQR.style.pointerEvents = 'none';
-  }
+  actualizarResumenMover();
 }
 
 btnEscanearEstante.addEventListener('click', () => {
@@ -1420,83 +1398,199 @@ async function abrirEscanerConCallback() {
 // --- Confirmar el movimiento ---
 btnConfirmarMoverQR.addEventListener('click', async () => {
   const codigoEstante = inputEstanteDestino.value.trim();
-  const codigoItem = inputItemMover.value.trim();
+  if (!codigoEstante) return;
 
-  if (!codigoEstante || !codigoItem) return;
-
-  // --- Parsear el código del estante ---
-  // Formato esperado: EST-IZQ-01-R2-E  ó  EST-IZQ-01-R2-E
+  // --- Parsear el código del estante destino ---
   const match = codigoEstante.match(/^(EST-[A-Z]+-\d+)-R(\d+)-([A-Z])$/);
-  
+
   if (!match) {
     alert(
-      ' Formato de estante inválido.\n\n' +
+      '⚠️ Formato de estante inválido.\n\n' +
       'Debe ser: EST-XXX-##-R#-X\n' +
       'Ejemplo: EST-IZQ-01-R2-E'
     );
     return;
   }
 
-  const estante = match[1];       // EST-IZQ-01
+  const estante = match[1];           // EST-IZQ-01
   const repisa = parseInt(match[2]);  // 2
-  const seccion = match[3];       // E
-
-  console.log('🔀 Moviendo:', codigoItem, '→', `${estante}-R${repisa}-${seccion}`);
+  const seccion = match[3];           // E
 
   // --- Verificar que el estante existe en INFO_ESTANTES ---
   if (!INFO_ESTANTES[estante]) {
     alert(
-      ` El estante "${estante}" no está configurado en el sistema.\n\n` +
-      `Solo están disponibles: ${Object.keys(INFO_ESTANTES).join(', ')}`
+      `⚠️ El estante "${estante}" no está configurado.\n\n` +
+      `Disponibles: ${Object.keys(INFO_ESTANTES).join(', ')}`
     );
     return;
   }
 
-  // --- Verificar que el item existe en Supabase ---
-  const item = await buscarItemPorCodigo(codigoItem);
+  // ============================================
+  // MODO 1: MOVER UN ITEM INDIVIDUAL
+  // ============================================
+  if (modoMover === 'item') {
+    const codigoItem = inputItemMover.value.trim();
+    if (!codigoItem) return;
 
-  if (!item) {
-    alert(` No existe un item con el código "${codigoItem}".`);
+    console.log('🔀 Moviendo item:', codigoItem, '→', `${estante}-R${repisa}-${seccion}`);
+
+    // Verificar que el item existe
+    const item = await buscarItemPorCodigo(codigoItem);
+    if (!item) {
+      alert(`❌ No existe un item con el código "${codigoItem}".`);
+      return;
+    }
+
+    // Actualizar en Supabase
+    const actualizado = await actualizarUbicacion(codigoItem, estante, repisa, seccion);
+    if (!actualizado) {
+      alert('❌ Error al actualizar. Mira la consola.');
+      return;
+    }
+
+    // Mover el objeto 3D si está en la escena
+    const objeto3D = scene.getObjectByName(codigoItem);
+    if (objeto3D) {
+      const nuevaPos = calcularPosicionLibreEnSlot(estante, repisa, seccion);
+      objeto3D.position.set(...nuevaPos);
+      objeto3D.userData.estante = estante;
+      objeto3D.userData.repisa = repisa;
+      objeto3D.userData.seccion = seccion;
+      console.log('📍 Objeto 3D movido a:', nuevaPos);
+    }
+
+    // Actualizar caché local
+    todosLosItems = todosLosItems.map(i =>
+      i.codigo === codigoItem ? actualizado : i
+    );
+
+    alert(
+      `✅ Item movido correctamente:\n\n` +
+      `${item.nombre} (${codigoItem})\n` +
+      `Nueva ubicación: ${estante}-R${repisa}-${seccion}`
+    );
+
+    finalizarMovimiento();
     return;
   }
 
-  // --- Actualizar la ubicación en Supabase ---
-  const actualizado = await actualizarUbicacion(codigoItem, estante, repisa, seccion);
+  // ============================================
+  // MODO 2: MOVER TODA UNA CATEGORÍA
+  // ============================================
+  if (modoMover === 'categoria') {
+    const categoria = inputCategoriaMover.value;
 
-  if (!actualizado) {
-    alert(' Error al actualizar. Mira la consola.');
+    // 1. Traer todos los items desde Supabase
+    const todos = await obtenerTodos();
+    const itemsDeCategoria = todos.filter(i => i.categoria === categoria);
+
+    if (itemsDeCategoria.length === 0) {
+      alert(`❌ No hay items registrados en la categoría "${categoria}".`);
+      return;
+    }
+
+    // 2. Calcular cuántos slots necesitamos y si hay espacio
+    const slotsDestino = generarSlotsDesde(
+      estante, repisa, seccion, itemsDeCategoria.length
+    );
+
+    if (slotsDestino.length < itemsDeCategoria.length) {
+      alert(
+        `⚠️ No hay suficientes slots desde R${repisa}-${seccion}.\n\n` +
+        `Necesitas: ${itemsDeCategoria.length}\n` +
+        `Disponibles: ${slotsDestino.length}\n\n` +
+        `Prueba con un punto de inicio anterior.`
+      );
+      return;
+    }
+
+    // 3. Confirmar acción (es destructiva)
+    const ok = confirm(
+      `Vas a mover ${itemsDeCategoria.length} item(s) de "${categoria}".\n\n` +
+      `Destino: ${estante} empezando en R${repisa}-${seccion}\n` +
+      `Se repartirán en ${slotsDestino.length} slot(s).\n\n` +
+      `¿Continuar?`
+    );
+    if (!ok) return;
+
+    // 4. Mover uno por uno
+    let movidos = 0;
+    let fallidos = 0;
+
+    for (let i = 0; i < itemsDeCategoria.length; i++) {
+      const item = itemsDeCategoria[i];
+      const slot = slotsDestino[i];
+
+      const ok = await actualizarUbicacion(
+        item.codigo, estante, slot.repisa, slot.seccion
+      );
+
+      if (!ok) {
+        console.warn('❌ Falló al mover:', item.codigo);
+        fallidos++;
+        continue;
+      }
+
+      // Mover el objeto 3D si existe en la escena
+      const obj3D = scene.getObjectByName(item.codigo);
+      if (obj3D) {
+        const pos = calcularPosicionLibreEnSlot(estante, slot.repisa, slot.seccion);
+        obj3D.position.set(...pos);
+        obj3D.userData.estante = estante;
+        obj3D.userData.repisa = slot.repisa;
+        obj3D.userData.seccion = slot.seccion;
+      }
+
+      // Actualizar caché local
+      todosLosItems = todosLosItems.map(x =>
+        x.codigo === item.codigo
+          ? { ...x, estante, repisa: slot.repisa, seccion: slot.seccion }
+          : x
+      );
+
+      movidos++;
+    }
+
+    // 5. Aviso final
+    let mensaje = `✅ ${movidos} item(s) movidos correctamente.`;
+    if (fallidos > 0) mensaje += `\n⚠️ ${fallidos} fallaron (mira la consola).`;
+    alert(mensaje);
+
+    finalizarMovimiento();
     return;
   }
+});
 
-  // --- Mover el objeto 3D si está en la escena ---
-  const objeto3D = scene.getObjectByName(codigoItem);
-  if (objeto3D) {
-    const nuevaPos = calcularPosicionSlot(estante, repisa, seccion);
-    objeto3D.position.set(...nuevaPos);
-    console.log(' Objeto 3D movido a:', nuevaPos);
+// ============================================
+// HELPER: generar slots desde un punto de inicio
+// ============================================
+function generarSlotsDesde(estanteId, repisaInicio, seccionInicio, cantidad) {
+  const info = INFO_ESTANTES[estanteId];
+  if (!info) return [];
+
+  const slots = [];
+  const indiceInicio = info.letras.indexOf(seccionInicio);
+  if (indiceInicio === -1) return [];
+
+  for (let r = repisaInicio; r < info.repisas && slots.length < cantidad; r++) {
+    const desdeSeccion = (r === repisaInicio) ? indiceInicio : 0;
+
+    for (let i = desdeSeccion; i < info.columnas && slots.length < cantidad; i++) {
+      slots.push({ repisa: r, seccion: info.letras[i] });
+    }
   }
+  return slots;
+}
 
-  // --- Actualizar la lista local ---
-  todosLosItems = todosLosItems.map(i => 
-    i.codigo === codigoItem ? actualizado : i
-  );
-
-  // --- Aviso de éxito ---
-  alert(
-    ` Item movido correctamente:\n\n` +
-    ` ${item.nombre} (${codigoItem})\n` +
-    ` Nueva ubicación: ${estante}-R${repisa}-${seccion}`
-  );
-
-  console.log('  Movimiento completado');
-
-  // --- Cerrar y volver al inventario ---
+// ============================================
+// HELPER: cerrar modal y refrescar inventario
+// ============================================
+function finalizarMovimiento() {
   cerrarMoverQR();
   panelFicha.style.display = 'none';
   panelInventario.style.display = 'block';
   renderizarItems(todosLosItems);
-});
-
+}
 // ============================================
 // PANEL DE CÓDIGOS DE SLOTS
 // ============================================
@@ -2128,4 +2222,128 @@ function calcularPosicionLibreEnSlot(estanteId, repisa, seccion) {
     posBase[1] + offsetY,
     posBase[2] + offsetZ
   ];
+}
+// ============================================
+// MOVER ITEMS POR CATEGORÍA
+// ============================================
+
+// --- Referencias a los nuevos elementos ---
+const btnModoItem        = document.getElementById('btnModoItem');
+const btnModoCategoria   = document.getElementById('btnModoCategoria');
+const inputCategoriaMover = document.getElementById('inputCategoriaMover');
+
+// Variable que indica el modo actual: 'item' o 'categoria'
+let modoMover = 'item';
+
+// --- Cambiar a modo "item individual" ---
+btnModoItem.addEventListener('click', () => {
+  modoMover = 'item';
+
+  // Estilos activos para "item"
+  btnModoItem.style.background = '#4a7ab8';
+  btnModoItem.style.borderColor = '#4a7ab8';
+  btnModoItem.style.color = 'white';
+
+  // Estilos inactivos para "categoría"
+  btnModoCategoria.style.background = '#2a2a3e';
+  btnModoCategoria.style.borderColor = '#444';
+  btnModoCategoria.style.color = '#aaa';
+
+  // Ocultar el select de categoría
+  inputCategoriaMover.style.display = 'none';
+  inputCategoriaMover.value = 'herramientas';
+
+  // Mostrar el input de código de item
+  inputItemMover.parentElement.style.opacity = '1';
+  inputItemMover.parentElement.style.pointerEvents = 'auto';
+
+  actualizarResumen();
+});
+
+// --- Cambiar a modo "categoría completa" ---
+btnModoCategoria.addEventListener('click', () => {
+  modoMover = 'categoria';
+
+  // Estilos activos para "categoría"
+  btnModoCategoria.style.background = '#7a4ab8';
+  btnModoCategoria.style.borderColor = '#7a4ab8';
+  btnModoCategoria.style.color = 'white';
+
+  // Estilos inactivos para "item"
+  btnModoItem.style.background = '#2a2a3e';
+  btnModoItem.style.borderColor = '#444';
+  btnModoItem.style.color = '#aaa';
+
+  // Mostrar el select de categoría
+  inputCategoriaMover.style.display = 'block';
+
+  // Ya no necesitamos el código de item
+  inputItemMover.value = '';
+
+  actualizarResumen();
+});
+
+// --- Cuando cambia la categoría seleccionada ---
+inputCategoriaMover.addEventListener('change', actualizarResumen);
+
+// --- Actualiza el resumen según el modo ---
+function actualizarResumenMover() {
+  const estante = inputEstanteDestino.value.trim();
+
+  if (modoMover === 'item') {
+    // Modo item: necesita estante + código
+    const item = inputItemMover.value.trim();
+
+    if (estante && item) {
+      resumenMover.style.display = 'block';
+      resumenMover.innerHTML = `
+        <p style="margin: 0 0 8px 0; font-weight: bold; color: #4aff4a;">
+          ✅ Listo para mover
+        </p>
+        <p style="margin: 4px 0; font-size: 12px;">
+          <span style="color:#aaa;">Modo:</span> <b>Item individual</b>
+        </p>
+        <p style="margin: 4px 0; font-size: 12px;">
+          <span style="color:#aaa;">Item:</span> <b>${item}</b>
+        </p>
+        <p style="margin: 4px 0; font-size: 12px;">
+          <span style="color:#aaa;">Destino:</span> <b>${estante}</b>
+        </p>
+      `;
+      btnConfirmarMoverQR.style.opacity = '1';
+      btnConfirmarMoverQR.style.pointerEvents = 'auto';
+    } else {
+      resumenMover.style.display = 'none';
+      btnConfirmarMoverQR.style.opacity = '0.5';
+      btnConfirmarMoverQR.style.pointerEvents = 'none';
+    }
+
+  } else {
+    // Modo categoría: necesita estante + categoría
+    const categoria = inputCategoriaMover.value;
+
+    if (estante && categoria) {
+      resumenMover.style.display = 'block';
+      resumenMover.innerHTML = `
+        <p style="margin: 0 0 8px 0; font-weight: bold; color: #ffcc00;">
+          ⚠️ Vas a mover TODA la categoría
+        </p>
+        <p style="margin: 4px 0; font-size: 12px;">
+          <span style="color:#aaa;">Modo:</span> <b>Categoría completa</b>
+        </p>
+        <p style="margin: 4px 0; font-size: 12px;">
+          <span style="color:#aaa;">Categoría:</span> <b>${categoria}</b>
+        </p>
+        <p style="margin: 4px 0; font-size: 12px;">
+          <span style="color:#aaa;">Destino:</span> <b>${estante}</b>
+        </p>
+      `;
+      btnConfirmarMoverQR.style.opacity = '1';
+      btnConfirmarMoverQR.style.pointerEvents = 'auto';
+    } else {
+      resumenMover.style.display = 'none';
+      btnConfirmarMoverQR.style.opacity = '0.5';
+      btnConfirmarMoverQR.style.pointerEvents = 'none';
+    }
+  }
 }
