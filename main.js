@@ -257,17 +257,17 @@ estanteAtras.position.set(-1.9, 0, -3.3);
 estanteAtras.rotation.y = Math.PI / 2;
 scene.add(estanteAtras);
 
-const estante_4 = crearEstante(9, 3, 0.7, 4, 9);
-estante_4.name = 'EST-MID-01'
-estante_4.position.set(-0.3, 0, -2.8);
-estante_4.rotation.y = Math.PI / 2;
-scene.add(estante_4);
+const estante_sup_izq = crearEstante(3.5, 3, 2, 4, 1);
+estante_sup_izq.name = 'EST-SUP-IZQ';
+estante_sup_izq.position.set(-1.2, 0, 6.7);
+estante_sup_izq.rotation.y = Math.PI / 2;
+scene.add(estante_sup_izq);
 
-const estante_5 = crearEstante(3.5, 3, 2, 4, 3);
-estante_5.name = 'EST-SUP-01'
-estante_5.position.set(0, 0, 6.7);
-estante_5.rotation.y = Math.PI / 2;
-scene.add(estante_5);
+const estante_sup_der = crearEstante(3.5, 3, 2, 4, 1);
+estante_sup_der.name = 'EST-SUP-DER';
+estante_sup_der.position.set(1.2, 0, 6.7);
+estante_sup_der.rotation.y = Math.PI / 2;
+scene.add(estante_sup_der);
 
 const estante_6 = crearEstante(7, 3, 1, 4, 4);
 estante_6.name ='EST-MID-02'
@@ -845,15 +845,25 @@ const INFO_ESTANTES = {
     letras: 'ABCD',
     nombre: 'Estante medio 2'
   },
-'EST-SUP-01': {
-  x: 0, y: 0, z: 6.7,
+   'EST-SUP-IZQ': {
+  x: -1.2, y: 0, z: 6.7,
   rotacionY: Math.PI / 2,
   ancho: 3.5,
   alto: 3,
-  repisas: 3,
-  columnas: 6,
-  letras: 'ABCDEF',
-  nombre: 'Estante superior'
+  repisas: 4,
+  columnas: 1,
+  letras: 'A',
+  nombre: 'Estante superior izquierda'
+},
+'EST-SUP-DER': {
+  x: 1.2, y: 0, z: 6.7,
+  rotacionY: Math.PI / 2,
+  ancho: 3.5,
+  alto: 3,
+  repisas: 4,
+  columnas: 1,
+  letras: 'A',
+  nombre: 'Estante superior derecha'
 },
   'EST-DER-02': {
     x: 2, y: 0, z: -3.4,
