@@ -853,7 +853,7 @@ console.log('  R3-E:', calcularPosicionSlot('EST-IZQ-01', 3, 'E'));
 // CREAR OBJETO 3D A PARTIR DE UN ITEM
 // ============================================
 function crearObjetoDesdeItem(item) {
-  // Calcular posición base del slot
+  // Posición base del slot
   const posBase = calcularPosicionLibreEnSlot(
     item.estante,
     item.repisa || 0,
@@ -861,58 +861,36 @@ function crearObjetoDesdeItem(item) {
   );
 
   const color = colorPorCategoria(item.categoria);
-  const cantidad = Math.min(item.cantidad || 1, 10);   
+  const cantidad = Math.min(item.cantidad || 1, 10);
 
   const grupo = new THREE.Group();
   grupo.name = item.codigo;
   grupo.userData = item;
 
-  // --- Info del estante para saber cuánto espacio hay ---
+  // --- Info del estante ---
   const info = INFO_ESTANTES[item.estante];
-  const anchoCelda = info ? (info.ancho / info.columnas) : 1.5;
-  const altoRepisa = 0.9;  
-  const profundo = info?.profundo || 0.4;
-
-  // --- Decidir cómo distribuir los items ---
-
-  // Tamaño de cada item
-  const tamItem = 0.2;
-  const alturaItem = tamItem;
-
-  // Agrupar los items en torres de máximo 3
-  const itemsPorTorre = 3;
-  const numTorres = Math.ceil(cantidad / itemsPorTorre);
-
-
-
-
-  scene.add(grupo);
-
-  const codigoUbic = generarCodigoUbicacion(item.estante, item.repisa || 0, item.seccion || 'E');
-  console.log(`🎁 Objeto creado: ${codigoUbic} (${cantidad} items)`);
-  return grupo;
-}
-
-  // --- Info del estante para saber cuánto ancho tiene la celda ---
   const anchoCelda = info ? (info.ancho / info.columnas) : 1.9;
 
-  // --- Calcular cuántos items caben por fila ---
+  // --- Tamaño de cada item ---
+  const tamItem = 0.2;
+
+  // --- Cuántos items caben por fila ---
   // Cada item ocupa 0.2 de ancho + 0.02 de separación = 0.22
   const anchoItemConSep = 0.22;
-  const margenIzq = 0.1;   // pequeño margen desde el borde de la celda
+  const margenIzq = 0.1;
   const itemsPorFila = Math.max(1, Math.floor((anchoCelda - margenIzq * 2) / anchoItemConSep));
 
+  // --- Colocar cada item uno al lado del otro ---
   for (let i = 0; i < cantidad; i++) {
     const caja = crearCajaItem(color, tamItem, i);
 
     // Fila y columna dentro de la celda
-    const col   = i % itemsPorFila;
-    const fila  = Math.floor(i / itemsPorFila);
+    const col  = i % itemsPorFila;
+    const fila = Math.floor(i / itemsPorFila);
 
-    // Colocar cada item pegado al borde izquierdo de la celda,
-    // uno al lado del otro, y si no caben, se pasa a una fila detrás
+    // Pegados al borde izquierdo, si no caben, fila detrás
     const offsetX = -(anchoCelda / 2) + margenIzq + (col * anchoItemConSep) + (tamItem / 2);
-    const offsetZ = (fila * 0.25) - ((fila) * 0.05);   // separación hacia atrás
+    const offsetZ = fila * 0.25;
 
     caja.position.set(
       posBase[0] + offsetX,
@@ -920,11 +898,17 @@ function crearObjetoDesdeItem(item) {
       posBase[2] + offsetZ
     );
 
-    // Sin rotación aleatoria, para que quede alineado
     caja.rotation.y = 0;
 
     grupo.add(caja);
   }
+
+  scene.add(grupo);
+
+  const codigoUbic = generarCodigoUbicacion(item.estante, item.repisa || 0, item.seccion || 'E');
+  console.log(`🎁 Objeto creado: ${codigoUbic} (${cantidad} items)`);
+  return grupo;
+}
 // ============================================
 // Helper: crear una caja de item individual
 // ============================================
