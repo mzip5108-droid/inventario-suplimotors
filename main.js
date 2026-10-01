@@ -883,31 +883,7 @@ function crearObjetoDesdeItem(item) {
   const itemsPorTorre = 3;
   const numTorres = Math.ceil(cantidad / itemsPorTorre);
 
-  for (let i = 0; i < cantidad; i++) {
-    const caja = crearCajaItem(color, tamItem, i);
 
-    // Calcular a qué torre pertenece y en qué nivel
-    const torreIndex = Math.floor(i / itemsPorTorre);   // 0, 1, 2, 3...
-    const nivel = i % itemsPorTorre;                     // 0, 1, 2
-
-    // Distribuir las torres en cuadrícula
-    const col = torreIndex % 3;                          // 0, 1, 2
-    const fila = Math.floor(torreIndex / 3) % 3;         // 0, 1, 2
-
-    const offsetX = (col - 1) * 0.2;      // -0.2, 0, +0.2
-    const offsetZ = (fila - 1) * 0.15;    // -0.15, 0, +0.15
-
-    caja.position.set(
-      posBase[0] + offsetX,
-      posBase[1] + (nivel * alturaItem),
-      posBase[2] + offsetZ
-    );
-
-    // Pequeña rotación
-    caja.rotation.y = (Math.random() - 0.5) * 0.2;
-
-    grupo.add(caja);
-  }
 
 
   scene.add(grupo);
@@ -917,7 +893,38 @@ function crearObjetoDesdeItem(item) {
   return grupo;
 }
 
+  // --- Info del estante para saber cuánto ancho tiene la celda ---
+  const anchoCelda = info ? (info.ancho / info.columnas) : 1.9;
 
+  // --- Calcular cuántos items caben por fila ---
+  // Cada item ocupa 0.2 de ancho + 0.02 de separación = 0.22
+  const anchoItemConSep = 0.22;
+  const margenIzq = 0.1;   // pequeño margen desde el borde de la celda
+  const itemsPorFila = Math.max(1, Math.floor((anchoCelda - margenIzq * 2) / anchoItemConSep));
+
+  for (let i = 0; i < cantidad; i++) {
+    const caja = crearCajaItem(color, tamItem, i);
+
+    // Fila y columna dentro de la celda
+    const col   = i % itemsPorFila;
+    const fila  = Math.floor(i / itemsPorFila);
+
+    // Colocar cada item pegado al borde izquierdo de la celda,
+    // uno al lado del otro, y si no caben, se pasa a una fila detrás
+    const offsetX = -(anchoCelda / 2) + margenIzq + (col * anchoItemConSep) + (tamItem / 2);
+    const offsetZ = (fila * 0.25) - ((fila) * 0.05);   // separación hacia atrás
+
+    caja.position.set(
+      posBase[0] + offsetX,
+      posBase[1],
+      posBase[2] + offsetZ
+    );
+
+    // Sin rotación aleatoria, para que quede alineado
+    caja.rotation.y = 0;
+
+    grupo.add(caja);
+  }
 // ============================================
 // Helper: crear una caja de item individual
 // ============================================
