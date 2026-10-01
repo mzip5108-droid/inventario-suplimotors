@@ -2578,13 +2578,3 @@ function actualizarResumenMover() {
     }
   }
 }
-// --- EXPONER VARIABLES PARA DIAGNÓSTICO ---
-window.__debug = {
-  THREE,
-  scene,
-  camera,
-  INFO_ESTANTES,
-  todosLosItems,
-  calcularPosicionSlot,
-  crearObjetoDesdeItem
-};
