@@ -257,6 +257,12 @@ estanteAtras.position.set(-1.9, 0, -3.3);
 estanteAtras.rotation.y = Math.PI / 2;
 scene.add(estanteAtras);
 
+const estante_4 = crearEstante(10, 3, 0.7, 4, 6);
+estante_4.name = 'EST-MID-01'
+estante_4.position.set( 0, 0, -3.3);
+estante_4.rotation.y = Math.PI / 2;
+scene.add(estante_4);
+
 const estante_sup_izq = crearEstante(3.5, 3, 1, 4, 3);
 estante_sup_izq.name = 'EST-SUP-IZQ';
 estante_sup_izq.position.set(-0.5, 0, 6.7);
