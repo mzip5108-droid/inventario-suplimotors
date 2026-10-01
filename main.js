@@ -244,38 +244,38 @@ estanteIzq.rotation.y = Math.PI / 2;
 scene.add(estanteIzq);
 
 // Estante en la pared DERECHA, mirando hacia adentro (-x)
-const estanteDer = crearEstante(17, 3, 0.4, 4);
+const estanteDer = crearEstante(17, 3, 0.4, 4, 6);
 estanteDer.name = 'EST-DER-01'
 estanteDer.position.set(ANCHO_CUARTO / 2 - GROSOR_PARED / 2 - 0.3, 0, 0);
 estanteDer.rotation.y = -Math.PI / 2;
 scene.add(estanteDer);
 
 // Estante en la pared TRASERA, mirando hacia adentro (+z)
-const estanteAtras = crearEstante(10, 3, 0.7, 4);
+const estanteAtras = crearEstante(10, 3, 0.7, 4, 6);
 estanteAtras.name = 'EST-IZQ-02'
 estanteAtras.position.set(-1.9, 0, -3.3);
 estanteAtras.rotation.y = Math.PI / 2;
 scene.add(estanteAtras);
 
-const estante_4 = crearEstante(9, 3, 0.7, 4);
+const estante_4 = crearEstante(9, 3, 0.7, 4, 9);
 estante_4.name = 'EST-MID-01'
 estante_4.position.set(-0.3, 0, -2.8);
 estante_4.rotation.y = Math.PI / 2;
 scene.add(estante_4);
 
-const estante_5 = crearEstante(3.5, 3, 2, 4);
+const estante_5 = crearEstante(3.5, 3, 2, 4, 6);
 estante_5.name = 'EST-SUP-01'
 estante_5.position.set(0, 0, 6.7);
 estante_5.rotation.y = Math.PI / 2;
 scene.add(estante_5);
 
-const estante_6 = crearEstante(7, 3, 1, 4);
+const estante_6 = crearEstante(7, 3, 1, 4, 4);
 estante_6.name ='EST-MID-02'
 estante_6.position.set(0.4, 0, -5);
 estante_6.rotation.y = Math.PI / 2;
 scene.add(estante_6);
 
-const estante_7 = crearEstante(10, 3, 0.7, 4);
+const estante_7 = crearEstante(10, 3, 0.7, 4, 5);
 
 estante_7.position.set(2, 0, -3.4);
 estante_7.name ='EST-DER-02'
@@ -792,10 +792,7 @@ function mostrarQR(item) {
 }
 
 // ============================================
-// POSICIONES BASE DE CADA ESTANTE
-// ============================================
-// ============================================
-// INFO DE ESTANTES CON DIVISIONES
+// INFO DE ESTANTES
 // ============================================
 const INFO_ESTANTES = {
   'EST-IZQ-01': {
@@ -807,6 +804,66 @@ const INFO_ESTANTES = {
     columnas: 9,
     letras: 'ABCDEFGHI',
     nombre: 'Estante izquierdo'
+  },
+  'EST-DER-01': {
+    x: 3.35, y: 0, z: 0,
+    rotacionY: -Math.PI / 2,
+    ancho: 17,
+    alto: 3,
+    repisas: 4,
+    columnas: 6,
+    letras: 'ABCDEF',
+    nombre: 'Estante derecho'
+  },
+  'EST-IZQ-02': {
+    x: -1.9, y: 0, z: -3.3,
+    rotacionY: Math.PI / 2,
+    ancho: 10,
+    alto: 3,
+    repisas: 4,
+    columnas: 6,
+    letras: 'ABCDEF',
+    nombre: 'Estante izquierdo atrás'
+  },
+  'EST-MID-01': {
+    x: -0.3, y: 0, z: -2.8,
+    rotacionY: Math.PI / 2,
+    ancho: 9,
+    alto: 3,
+    repisas: 6,
+    columnas: 9,
+    letras: 'ABCDEFGHI',
+    nombre: 'Estante medio 1'
+  },
+  'EST-MID-02': {
+    x: 0.4, y: 0, z: -5,
+    rotacionY: Math.PI / 2,
+    ancho: 7,
+    alto: 3,
+    repisas: 4,
+    columnas: 4,
+    letras: 'ABCD',
+    nombre: 'Estante medio 2'
+  },
+  'EST-SUP-01': {
+    x: 0, y: 0, z: 6.7,
+    rotacionY: Math.PI / 2,
+    ancho: 3.5,
+    alto: 3,
+    repisas: 4,
+    columnas: 6,
+    letras: 'ABCDEF',
+    nombre: 'Estante superior (doble cara)'
+  },
+  'EST-DER-02': {
+    x: 2, y: 0, z: -3.4,
+    rotacionY: Math.PI / 2,
+    ancho: 10,
+    alto: 3,
+    repisas: 5,
+    columnas: 5,
+    letras: 'ABCDE',
+    nombre: 'Estante derecho atrás'
   }
 };
 
