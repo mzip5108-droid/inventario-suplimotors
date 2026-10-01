@@ -833,54 +833,115 @@ console.log('  R3-E:', calcularPosicionSlot('EST-IZQ-01', 3, 'E'));
 // CREAR OBJETO 3D A PARTIR DE UN ITEM
 // ============================================
 function crearObjetoDesdeItem(item) {
-  // Calcular posición exacta en el slot
-  const pos = calcularPosicionSlot(
+  // Calcular posición base del slot
+  const posBase = calcularPosicionSlot(
     item.estante,
     item.repisa || 0,
     item.seccion || 'E'
   );
 
   const color = colorPorCategoria(item.categoria);
+  const cantidad = Math.min(item.cantidad || 1, 10);   
 
   const grupo = new THREE.Group();
   grupo.name = item.codigo;
   grupo.userData = item;
 
-  // Caja base
-  const tamaño = [0.3, 0.2, 0.3];
-  const caja = new THREE.Mesh(
-    new THREE.BoxGeometry(...tamaño),
-    new THREE.MeshStandardMaterial({
-      color: color,
-      roughness: 0.7,
-      metalness: 0.1
-    })
-  );
-  caja.position.y = tamaño[1] / 2;
-  caja.castShadow = true;
-  caja.receiveShadow = true;
-  grupo.add(caja);
+  // --- Info del estante para saber cuánto espacio hay ---
+  const info = INFO_ESTANTES[item.estante];
+  const anchoCelda = info ? (info.ancho / info.columnas) : 1.5;
+  const altoRepisa = 0.9;  
+  const profundo = info?.profundo || 0.4;
 
-  // Tapa
-  const tapa = new THREE.Mesh(
-    new THREE.BoxGeometry(tamaño[0] + 0.01, 0.02, tamaño[2] + 0.01),
-    new THREE.MeshStandardMaterial({
-      color: 0x222222,
-      roughness: 0.5,
-      metalness: 0.3
-    })
-  );
-  tapa.position.y = tamaño[1] + 0.01;
-  tapa.castShadow = true;
-  grupo.add(tapa);
+  // --- Decidir cómo distribuir los items ---
 
-  grupo.position.set(...pos);
+  const usarApilado = cantidad > 3;
+
+  // Tamaño de cada item (más chico si hay muchos)
+  const tamItem = usarApilado ? 0.2 : 0.25;
+  const alturaItem = tamItem;
+
+  if (usarApilado) {
+    // ========================================
+    // MODO APILADO: los items van uno encima de otro
+    // ========================================
+    for (let i = 0; i < cantidad; i++) {
+      const caja = crearCajaItem(color, tamItem, i);
+      
+      // Posición: mismo X y Z, Y escalonada
+      caja.position.set(
+        posBase[0],
+        posBase[1] + (i * alturaItem),   // apilar
+        posBase[2]
+      );
+      
+      // Pequeña rotación aleatoria para variación natural
+      caja.rotation.y = (Math.random() - 0.5) * 0.3;
+      
+      grupo.add(caja);
+    }
+  } else {
+    // ========================================
+    // MODO FILA: los items van uno al lado del otro
+    // ========================================
+    const espaciado = tamItem + 0.05;
+    const anchoTotal = cantidad * espaciado;
+    
+    for (let i = 0; i < cantidad; i++) {
+      const caja = crearCajaItem(color, tamItem, i);
+      
+      // Distribuir a lo largo del ancho de la celda
+      const offsetX = -anchoTotal / 2 + espaciado * (i + 0.5);
+      
+      caja.position.set(
+        posBase[0] + offsetX,           // distribuir en X
+        posBase[1] + alturaItem / 2,
+        posBase[2]
+      );
+      
+      // Ligera rotación
+      caja.rotation.y = (Math.random() - 0.5) * 0.2;
+      
+      grupo.add(caja);
+    }
+  }
+
   scene.add(grupo);
 
   const codigoUbic = generarCodigoUbicacion(item.estante, item.repisa || 0, item.seccion || 'E');
-  console.log('🎁 Objeto creado en slot:', codigoUbic, '→', pos);
+  console.log(`🎁 Objeto creado: ${codigoUbic} (${cantidad} items)`);
   return grupo;
+
 }
+
+// ============================================
+// Helper: crear una caja de item individual
+// ============================================
+function crearCajaItem(color, tamaño, indice) {
+  // Variación de color para que se vean distintos
+  const variacion = (Math.random() - 0.5) * 0.15;
+  const colorFinal = new THREE.Color(color).offsetHSL(0, 0, variacion);
+  
+  const caja = new THREE.Mesh(
+    new THREE.BoxGeometry(tamaño, tamaño * 0.8, tamaño),
+    new THREE.MeshStandardMaterial({
+      color: colorFinal,
+      roughness: 0.65,
+      metalness: 0.15
+    })
+  );
+  
+  // Sombra
+  caja.castShadow = true;
+  caja.receiveShadow = true;
+  
+
+  return caja;
+}
+
+
+  
+
 
 // ============================================
 // COLOR SEGÚN CATEGORÍA
@@ -1027,14 +1088,9 @@ function renderizarItems(items) {
     `;
 
     // Emoji según categoría
-    const emojiCat = {
-      herramientas: '🔧', fijaciones: '🔩', electrico: '⚡',
-      plomeria: '🚿', pintura: '🎨', seguridad: '🦺', general: '📦'
-    }[item.categoria] || '📦';
-
     card.innerHTML = `
       <div style="font-weight:bold; font-size:14px; margin-bottom:5px;">
-        ${emojiCat} ${item.nombre}
+         ${item.nombre}
       </div>
       <div style="font-size:11px; color:#aaa; margin-bottom:3px;">
         Código: ${item.codigo}
