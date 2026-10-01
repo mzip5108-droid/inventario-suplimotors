@@ -523,6 +523,26 @@
       <option value="seguridad"> Seguridad</option>
       <option value="general"> General</option>
     </select>
+    <!-- Toggle: juntar o repartir (solo en modo categoría) -->
+    <div id="toggleModoDistribucion" style="
+      display: none; margin-top: 12px;
+      background: #1e1e2e; padding: 12px; border-radius: 8px;
+      border: 1px solid #333;
+    ">
+      <p style="margin: 0 0 10px 0; font-size: 12px; color: #aaa;">
+        ¿Cómo quieres distribuir los items?
+      </p>
+      <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; font-size: 13px;">
+        <input type="radio" name="modoDistribucion" value="juntar" checked
+          style="width: auto; margin: 0;">
+        <span>📦 Todos en la misma celda</span>
+      </label>
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+        <input type="radio" name="modoDistribucion" value="repartir"
+          style="width: auto; margin: 0;">
+        <span>↔️ Repartir en celdas consecutivas</span>
+      </label>
+    </div>
   </div>
 
   <!-- Paso 2: escanear item -->

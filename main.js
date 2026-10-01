@@ -1024,6 +1024,8 @@ const btnCancelarMoverQR     = document.getElementById('btnCancelarMoverQR');
 const btnConfirmarMoverQR    = document.getElementById('btnConfirmarMoverQR');
 const btnEscanearEstante     = document.getElementById('btnEscanearEstante');
 const btnEscanearItem        = document.getElementById('btnEscanearItem');
+const toggleModoDistribucion = document.getElementById('toggleModoDistribucion');
+
 
 // Cache de todos los items (para no consultar Supabase cada vez)
 let todosLosItems = [];
@@ -1477,11 +1479,16 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
     return;
   }
 
-  // ============================================
+ // ============================================
   // MODO 2: MOVER TODA UNA CATEGORÍA
   // ============================================
   if (modoMover === 'categoria') {
     const categoria = inputCategoriaMover.value;
+
+    // Leer el modo de distribución elegido
+    const modoDistribucion = document.querySelector(
+      'input[name="modoDistribucion"]:checked'
+    ).value;   // 'juntar' o 'repartir'
 
     // 1. Traer todos los items desde Supabase
     const todos = await obtenerTodos();
@@ -1492,25 +1499,61 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
       return;
     }
 
-    // 2. Confirmar acción (es destructiva)
-    const ok = confirm(
-      `Vas a mover ${itemsDeCategoria.length} item(s) de "${categoria}".\n\n` +
-      `Todos irán al mismo slot:\n` +
-      `${estante}-R${repisa}-${seccion}\n\n` +
-      `¿Continuar?`
-    );
+    // 2. Calcular slots destino según el modo
+    let slotsDestino;
+
+    if (modoDistribucion === 'juntar') {
+      // Todos al mismo slot
+      slotsDestino = Array(itemsDeCategoria.length).fill({
+        repisa: repisa,
+        seccion: seccion
+      });
+    } else {
+      // Repartir en celdas consecutivas
+      slotsDestino = generarSlotsDesde(
+        estante, repisa, seccion, itemsDeCategoria.length
+      );
+
+      if (slotsDestino.length < itemsDeCategoria.length) {
+        alert(
+          `⚠️ No hay suficientes slots desde R${repisa}-${seccion}.\n\n` +
+          `Necesitas: ${itemsDeCategoria.length}\n` +
+          `Disponibles: ${slotsDestino.length}\n\n` +
+          `Prueba con un punto de inicio anterior o usa "Todos en la misma celda".`
+        );
+        return;
+      }
+    }
+
+    // 3. Confirmar
+    let mensajeConfirm;
+    if (modoDistribucion === 'juntar') {
+      mensajeConfirm =
+        `Vas a mover ${itemsDeCategoria.length} item(s) de "${categoria}".\n\n` +
+        `Todos irán al mismo slot:\n` +
+        `${estante}-R${repisa}-${seccion}\n\n` +
+        `¿Continuar?`;
+    } else {
+      mensajeConfirm =
+        `Vas a mover ${itemsDeCategoria.length} item(s) de "${categoria}".\n\n` +
+        `Se repartirán en ${slotsDestino.length} slot(s) consecutivos\n` +
+        `desde ${estante}-R${repisa}-${seccion}.\n\n` +
+        `¿Continuar?`;
+    }
+
+    const ok = confirm(mensajeConfirm);
     if (!ok) return;
 
-    // 3. Mover uno por uno (todos al mismo slot)
+    // 4. Mover uno por uno
     let movidos = 0;
     let fallidos = 0;
 
     for (let i = 0; i < itemsDeCategoria.length; i++) {
       const item = itemsDeCategoria[i];
+      const slot = slotsDestino[i];
 
-      // Todos van al MISMO destino (estante, repisa, seccion)
       const ok = await actualizarUbicacion(
-        item.codigo, estante, repisa, seccion
+        item.codigo, estante, slot.repisa, slot.seccion
       );
 
       if (!ok) {
@@ -1519,20 +1562,20 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
         continue;
       }
 
-      // Mover el objeto 3D si existe en la escena
+      // Mover el objeto 3D si existe
       const obj3D = scene.getObjectByName(item.codigo);
       if (obj3D) {
-        const pos = calcularPosicionLibreEnSlot(estante, repisa, seccion);
+        const pos = calcularPosicionLibreEnSlot(estante, slot.repisa, slot.seccion);
         obj3D.position.set(...pos);
         obj3D.userData.estante = estante;
-        obj3D.userData.repisa = repisa;
-        obj3D.userData.seccion = seccion;
+        obj3D.userData.repisa = slot.repisa;
+        obj3D.userData.seccion = slot.seccion;
       }
 
       // Actualizar caché local
       todosLosItems = todosLosItems.map(x =>
         x.codigo === item.codigo
-          ? { ...x, estante, repisa, seccion }
+          ? { ...x, estante, repisa: slot.repisa, seccion: slot.seccion }
           : x
       );
 
@@ -2227,23 +2270,19 @@ let modoMover = 'item';
 btnModoItem.addEventListener('click', () => {
   modoMover = 'item';
 
-  // Estilos activos para "item"
   btnModoItem.style.background = '#4a7ab8';
   btnModoItem.style.borderColor = '#4a7ab8';
   btnModoItem.style.color = 'white';
 
-  // Estilos inactivos para "categoría"
   btnModoCategoria.style.background = '#2a2a3e';
   btnModoCategoria.style.borderColor = '#444';
   btnModoCategoria.style.color = '#aaa';
 
-  // Ocultar el select de categoría
   inputCategoriaMover.style.display = 'none';
-  inputCategoriaMover.value = 'herramientas';
+  inputCategoriaMover.value = 'bombadeaceite';
+  toggleModoDistribucion.style.display = 'none';   // ← NUEVO
 
-  // Mostrar el input de código de item
-  inputItemMover.parentElement.style.opacity = '1';
-  inputItemMover.parentElement.style.pointerEvents = 'auto';
+  pasoItem.style.display = 'block';
 
   actualizarResumen();
 });
@@ -2252,34 +2291,32 @@ btnModoItem.addEventListener('click', () => {
 btnModoCategoria.addEventListener('click', () => {
   modoMover = 'categoria';
 
-  // Estilos activos para "categoría"
   btnModoCategoria.style.background = '#7a4ab8';
   btnModoCategoria.style.borderColor = '#7a4ab8';
   btnModoCategoria.style.color = 'white';
 
-  // Estilos inactivos para "item"
   btnModoItem.style.background = '#2a2a3e';
   btnModoItem.style.borderColor = '#444';
   btnModoItem.style.color = '#aaa';
 
-  // Mostrar el select de categoría
   inputCategoriaMover.style.display = 'block';
+  toggleModoDistribucion.style.display = 'block';  // ← NUEVO
 
-  // Ya no necesitamos el código de item
   inputItemMover.value = '';
+  pasoItem.style.display = 'none';
 
   actualizarResumen();
 });
 
-// --- Cuando cambia la categoría seleccionada ---
-inputCategoriaMover.addEventListener('change', actualizarResumen);
-
+// --- Cuando cambia el modo de distribución ---
+document.querySelectorAll('input[name="modoDistribucion"]').forEach(radio => {
+  radio.addEventListener('change', actualizarResumen);
+});
 // --- Actualiza el resumen según el modo ---
 function actualizarResumenMover() {
   const estante = inputEstanteDestino.value.trim();
 
   if (modoMover === 'item') {
-    // Modo item: necesita estante + código
     const item = inputItemMover.value.trim();
 
     if (estante && item) {
@@ -2307,8 +2344,15 @@ function actualizarResumenMover() {
     }
 
   } else {
-    // Modo categoría: necesita estante + categoría
+    // Modo categoría
     const categoria = inputCategoriaMover.value;
+    const modoDistribucion = document.querySelector(
+      'input[name="modoDistribucion"]:checked'
+    )?.value || 'juntar';
+
+    const textoDistribucion = modoDistribucion === 'juntar'
+      ? 'Todos en la misma celda'
+      : 'Repartir en celdas consecutivas';
 
     if (estante && categoria) {
       resumenMover.style.display = 'block';
@@ -2317,10 +2361,10 @@ function actualizarResumenMover() {
           ⚠️ Vas a mover TODA la categoría
         </p>
         <p style="margin: 4px 0; font-size: 12px;">
-          <span style="color:#aaa;">Modo:</span> <b>Categoría completa</b>
+          <span style="color:#aaa;">Categoría:</span> <b>${categoria}</b>
         </p>
         <p style="margin: 4px 0; font-size: 12px;">
-          <span style="color:#aaa;">Categoría:</span> <b>${categoria}</b>
+          <span style="color:#aaa;">Distribución:</span> <b>${textoDistribucion}</b>
         </p>
         <p style="margin: 4px 0; font-size: 12px;">
           <span style="color:#aaa;">Destino:</span> <b>${estante}</b>
