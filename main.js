@@ -1025,6 +1025,8 @@ const btnConfirmarMoverQR    = document.getElementById('btnConfirmarMoverQR');
 const btnEscanearEstante     = document.getElementById('btnEscanearEstante');
 const btnEscanearItem        = document.getElementById('btnEscanearItem');
 const toggleModoDistribucion = document.getElementById('toggleModoDistribucion');
+const listaAsignacionItems    = document.getElementById('listaAsignacionItems');
+const contenidoAsignacionItems = document.getElementById('contenidoAsignacionItems');
 
 
 // Cache de todos los items (para no consultar Supabase cada vez)
@@ -1472,25 +1474,25 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
     alert(
       `✅ Item movido correctamente:\n\n` +
       `${item.nombre} (${codigoItem})\n` +
-      `Nueva ubicación: ${estante}-R${repisa}-${seccion}`
+        `Nueva ubicación: ${estante}-R${repisa}-${seccion}`
     );
 
     finalizarMovimiento();
     return;
   }
 
- // ============================================
+  // ============================================
   // MODO 2: MOVER TODA UNA CATEGORÍA
   // ============================================
   if (modoMover === 'categoria') {
     const categoria = inputCategoriaMover.value;
 
-    // Leer el modo de distribución elegido
+    // Leer el modo de distribución
     const modoDistribucion = document.querySelector(
       'input[name="modoDistribucion"]:checked'
-    ).value;   // 'juntar' o 'repartir'
+    ).value;
 
-    // 1. Traer todos los items desde Supabase
+    // 1. Traer items de la categoría
     const todos = await obtenerTodos();
     const itemsDeCategoria = todos.filter(i => i.categoria === categoria);
 
@@ -1501,15 +1503,14 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
 
     // 2. Calcular slots destino según el modo
     let slotsDestino;
+    let asignaciones = null;
 
     if (modoDistribucion === 'juntar') {
-      // Todos al mismo slot
       slotsDestino = Array(itemsDeCategoria.length).fill({
         repisa: repisa,
         seccion: seccion
       });
-    } else {
-      // Repartir en celdas consecutivas
+    } else if (modoDistribucion === 'repartir') {
       slotsDestino = generarSlotsDesde(
         estante, repisa, seccion, itemsDeCategoria.length
       );
@@ -1518,9 +1519,35 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
         alert(
           `⚠️ No hay suficientes slots desde R${repisa}-${seccion}.\n\n` +
           `Necesitas: ${itemsDeCategoria.length}\n` +
-          `Disponibles: ${slotsDestino.length}\n\n` +
-          `Prueba con un punto de inicio anterior o usa "Todos en la misma celda".`
+          `Disponibles: ${slotsDestino.length}`
         );
+        return;
+      }
+    } else if (modoDistribucion === 'asignar') {
+      // Leer los <select> de la lista de asignación
+      const selects = document.querySelectorAll('.select-celda-item');
+      asignaciones = [];
+
+      for (const sel of selects) {
+        const codigoCelda = sel.value;
+        if (!codigoCelda) {
+          alert('⚠️ Debes asignar una celda a TODOS los items.');
+          return;
+        }
+        const m = codigoCelda.match(/^(EST-[A-Z]+-\d+)-R(\d+)-([A-Z])$/);
+        if (!m) {
+          alert(`⚠️ Código de celda inválido: ${codigoCelda}`);
+          return;
+        }
+        asignaciones.push({
+          codigoItem: sel.dataset.codigoItem,
+          repisa: parseInt(m[2]),
+          seccion: m[3]
+        });
+      }
+
+      if (asignaciones.length !== itemsDeCategoria.length) {
+        alert('⚠️ La cantidad de asignaciones no coincide con los items.');
         return;
       }
     }
@@ -1533,11 +1560,20 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
         `Todos irán al mismo slot:\n` +
         `${estante}-R${repisa}-${seccion}\n\n` +
         `¿Continuar?`;
-    } else {
+    } else if (modoDistribucion === 'repartir') {
       mensajeConfirm =
         `Vas a mover ${itemsDeCategoria.length} item(s) de "${categoria}".\n\n` +
         `Se repartirán en ${slotsDestino.length} slot(s) consecutivos\n` +
         `desde ${estante}-R${repisa}-${seccion}.\n\n` +
+        `¿Continuar?`;
+    } else {
+      const resumenAsignaciones = asignaciones.map((a, i) =>
+        `  ${i + 1}. ${estante}-R${a.repisa}-${a.seccion}`
+      ).join('\n');
+
+      mensajeConfirm =
+        `Vas a mover ${itemsDeCategoria.length} item(s) de "${categoria}".\n\n` +
+        `Asignación:\n${resumenAsignaciones}\n\n` +
         `¿Continuar?`;
     }
 
@@ -1550,7 +1586,14 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
 
     for (let i = 0; i < itemsDeCategoria.length; i++) {
       const item = itemsDeCategoria[i];
-      const slot = slotsDestino[i];
+
+      let slot;
+      if (modoDistribucion === 'asignar') {
+        const asign = asignaciones.find(a => a.codigoItem === item.codigo);
+        slot = { repisa: asign.repisa, seccion: asign.seccion };
+      } else {
+        slot = slotsDestino[i];
+      }
 
       const ok = await actualizarUbicacion(
         item.codigo, estante, slot.repisa, slot.seccion
@@ -1562,7 +1605,6 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
         continue;
       }
 
-      // Mover el objeto 3D si existe
       const obj3D = scene.getObjectByName(item.codigo);
       if (obj3D) {
         const pos = calcularPosicionLibreEnSlot(estante, slot.repisa, slot.seccion);
@@ -1572,7 +1614,6 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
         obj3D.userData.seccion = slot.seccion;
       }
 
-      // Actualizar caché local
       todosLosItems = todosLosItems.map(x =>
         x.codigo === item.codigo
           ? { ...x, estante, repisa: slot.repisa, seccion: slot.seccion }
@@ -1582,7 +1623,6 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
       movidos++;
     }
 
-    // 5. Aviso final
     let mensaje = `✅ ${movidos} item(s) movidos correctamente.`;
     if (fallidos > 0) mensaje += `\n⚠️ ${fallidos} fallaron (mira la consola).`;
     alert(mensaje);
@@ -1591,6 +1631,84 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
     return;
   }
 });
+
+// ============================================
+// CONSTRUIR LISTA DE ASIGNACIÓN DE CELDAS POR ITEM
+// ============================================
+function construirListaAsignacion(estanteId) {
+  const info = INFO_ESTANTES[estanteId];
+  if (!info) {
+    contenidoAsignacionItems.innerHTML =
+      '<p style="color:#f44; font-size:12px;">Estante no configurado</p>';
+    return;
+  }
+
+  const categoria = inputCategoriaMover.value;
+  const itemsDeCategoria = todosLosItems.filter(i => i.categoria === categoria);
+
+  if (itemsDeCategoria.length === 0) {
+    contenidoAsignacionItems.innerHTML =
+      '<p style="color:#f44; font-size:12px;">No hay items en esta categoría</p>';
+    return;
+  }
+
+  const opcionesSlots = [];
+  for (let r = 0; r < info.repisas; r++) {
+    for (let i = 0; i < info.columnas; i++) {
+      const seccion = info.letras[i];
+      const codigo = `${estanteId}-R${r}-${seccion}`;
+      opcionesSlots.push(codigo);
+    }
+  }
+
+  contenidoAsignacionItems.innerHTML = '';
+  itemsDeCategoria.forEach((item, idx) => {
+    const fila = document.createElement('div');
+    fila.style.cssText = `
+      display: flex; flex-direction: column; gap: 4px;
+      padding: 8px 0; border-bottom: 1px solid #333;
+    `;
+
+    const nombre = document.createElement('div');
+    nombre.style.cssText = `
+      font-size: 12px; font-weight: bold; color: white;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    `;
+    nombre.textContent = `${idx + 1}. ${item.nombre}`;
+    fila.appendChild(nombre);
+
+    const select = document.createElement('select');
+    select.className = 'select-celda-item';
+    select.dataset.codigoItem = item.codigo;
+    select.style.cssText = `
+      width: 100%; padding: 6px; font-size: 11px;
+      border-radius: 6px; border: 1px solid #333;
+      background: #2a2a3e; color: white;
+      font-family: monospace;
+    `;
+
+    const optVacia = document.createElement('option');
+    optVacia.value = '';
+    optVacia.textContent = '— Selecciona celda —';
+    select.appendChild(optVacia);
+
+    opcionesSlots.forEach(codigo => {
+      const opt = document.createElement('option');
+      opt.value = codigo;
+      opt.textContent = codigo;
+      if (item.estante === estanteId
+          && codigo === `${estanteId}-R${item.repisa}-${item.seccion}`) {
+        opt.selected = true;
+      }
+      select.appendChild(opt);
+    });
+
+    select.addEventListener('change', actualizarResumen);
+
+    fila.appendChild(select);
+    contenidoAsignacionItems.appendChild(fila);
+  });
+}
 
 // ============================================
 // HELPER: generar slots desde un punto de inicio
@@ -2309,8 +2427,29 @@ btnModoCategoria.addEventListener('click', () => {
 });
 
 // --- Cuando cambia el modo de distribución ---
+// --- Cuando cambia el modo de distribución ---
 document.querySelectorAll('input[name="modoDistribucion"]').forEach(radio => {
-  radio.addEventListener('change', actualizarResumen);
+  radio.addEventListener('change', () => {
+    const modoElegido = document.querySelector(
+      'input[name="modoDistribucion"]:checked'
+    ).value;
+
+    if (modoElegido === 'asignar') {
+      const codigoEstante = inputEstanteDestino.value.trim();
+      const matchEstante = codigoEstante.match(/^(EST-[A-Z]+-\d+)-R\d+-[A-Z]$/);
+      listaAsignacionItems.style.display = 'block';
+      if (matchEstante) {
+        construirListaAsignacion(matchEstante[1]);
+      } else {
+        contenidoAsignacionItems.innerHTML =
+          '<p style="color:#f44; font-size:12px;">Primero escanea un estante destino</p>';
+      }
+    } else {
+      listaAsignacionItems.style.display = 'none';
+    }
+
+    actualizarResumen();
+  });
 });
 // --- Actualiza el resumen según el modo ---
 function actualizarResumenMover() {
@@ -2350,10 +2489,14 @@ function actualizarResumenMover() {
       'input[name="modoDistribucion"]:checked'
     )?.value || 'juntar';
 
-    const textoDistribucion = modoDistribucion === 'juntar'
-      ? 'Todos en la misma celda'
-      : 'Repartir en celdas consecutivas';
-
+      let textoDistribucion;
+    if (modoDistribucion === 'juntar') {
+      textoDistribucion = 'Todos en la misma celda';
+    } else if (modoDistribucion === 'repartir') {
+      textoDistribucion = 'Repartir en celdas consecutivas';
+    } else {
+      textoDistribucion = 'Asignar celda a cada item';
+    }
     if (estante && categoria) {
       resumenMover.style.display = 'block';
       resumenMover.innerHTML = `
