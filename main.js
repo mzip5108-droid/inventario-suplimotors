@@ -852,14 +852,8 @@ console.log('  R3-E:', calcularPosicionSlot('EST-IZQ-01', 3, 'E'));
 // ============================================
 // CREAR OBJETO 3D A PARTIR DE UN ITEM
 // ============================================
-function crearObjetoDesdeItem(item) {
-  // Posición base del slot
-  const posBase = calcularPosicionLibreEnSlot(
-    item.estante,
-    item.repisa || 0,
-    item.seccion || 'E'
-  );
 
+function crearObjetoDesdeItem(item) {
   const color = colorPorCategoria(item.categoria);
   const cantidad = Math.min(item.cantidad || 1, 10);
 
@@ -867,46 +861,81 @@ function crearObjetoDesdeItem(item) {
   grupo.name = item.codigo;
   grupo.userData = item;
 
-  // --- Info del estante ---
   const info = INFO_ESTANTES[item.estante];
-  const anchoCelda = info ? (info.ancho / info.columnas) : 1.9;
+  if (!info) {
+    console.warn('⚠️ Estante no configurado:', item.estante);
+    return grupo;
+  }
 
-  // --- Tamaño de cada item ---
-  const tamItem = 0.2;
+  // --- Datos del estante y la celda ---
+  const anchoCelda = info.ancho / info.columnas;
+  const repisaY    = (item.repisa || 0) * ALTURA_REPISA + 0.05;
+  const tamItem    = 0.2;
+  const alturaItem = tamItem * 0.9;    // altura entre cajas apiladas
 
-  // --- Cuántos items caben por fila ---
-  // Cada item ocupa 0.2 de ancho + 0.02 de separación = 0.22
-  const anchoItemConSep = 0.22;
-  const margenIzq = 0.1;
-  const itemsPorFila = Math.max(1, Math.floor((anchoCelda - margenIzq * 2) / anchoItemConSep));
+  // --- Separación entre items (grupos) en la fila ---
+  const anchoItemConSep = 0.26;        // cada item ocupa 0.26 de ancho
+  const margenIzq       = 0.15;
+  const itemsPorFila    = Math.max(1, Math.floor((anchoCelda - margenIzq * 2) / anchoItemConSep));
 
-  // --- Colocar cada item uno al lado del otro ---
-  for (let i = 0; i < cantidad; i++) {
-    const caja = crearCajaItem(color, tamItem, i);
+  // --- Cuántos items (grupos) ya existen en esta celda ---
+  let itemsEnSlot = 0;
+  scene.children.forEach(hijo => {
+    if (hijo.isGroup && hijo.userData
+        && hijo.userData.estante === item.estante
+        && hijo.userData.repisa === item.repisa
+        && hijo.userData.seccion === item.seccion
+        && hijo.name !== item.codigo) {
+      itemsEnSlot++;
+    }
+  });
 
-    // Fila y columna dentro de la celda
-    const col  = i % itemsPorFila;
-    const fila = Math.floor(i / itemsPorFila);
+  // --- Índice de la celda en el ancho del estante ---
+  const indiceColumna = info.letras.indexOf(item.seccion);
+  const offsetCeldaLocalX = info.ancho / 2 - anchoCelda * (indiceColumna + 0.5);
 
-    // Pegados al borde izquierdo, si no caben, fila detrás
-    const offsetX = -(anchoCelda / 2) + margenIzq + (col * anchoItemConSep) + (tamItem / 2);
-    const offsetZ = fila * 0.25;
+  // --- Rotación del estante ---
+  const cos = Math.cos(info.rotacionY);
+  const sin = Math.sin(info.rotacionY);
+
+  // --- Este item ocupa UNA posición en la fila ---
+  const miIndice     = itemsEnSlot;
+  const col          = miIndice % itemsPorFila;
+  const fila         = Math.floor(miIndice / itemsPorFila);
+
+  // --- Offset local del item dentro del estante ---
+  const offsetLocalX = offsetCeldaLocalX
+                     - anchoCelda / 2
+                     + margenIzq
+                     + (col * anchoItemConSep)
+                     + (tamItem / 2);
+  const offsetLocalZ = fila * 0.25;
+
+  // --- Aplicar rotación del estante ---
+  const xLocal = offsetLocalX * cos - offsetLocalZ * sin;
+  const zLocal = offsetLocalX * sin + offsetLocalZ * cos;
+
+  // --- Posición base del item dentro de la escena ---
+  const posX = info.x + xLocal;
+  const posZ = info.z + zLocal;
+  const posY = info.y + repisaY;
+
+  // --- Crear tantas cajas como indique la cantidad (apiladas) ---
+  for (let n = 0; n < cantidad; n++) {
+    const caja = crearCajaItem(color, tamItem, n);
 
     caja.position.set(
-      posBase[0] + offsetX,
-      posBase[1],
-      posBase[2] + offsetZ
+      posX,
+      posY + (n * alturaItem),
+      posZ
     );
 
     caja.rotation.y = 0;
-
     grupo.add(caja);
   }
 
   scene.add(grupo);
-
-  const codigoUbic = generarCodigoUbicacion(item.estante, item.repisa || 0, item.seccion || 'E');
-  console.log(`🎁 Objeto creado: ${codigoUbic} (${cantidad} items)`);
+  console.log(`🎁 Objeto creado: ${item.estante}-R${item.repisa}-${item.seccion} (cantidad ${cantidad})`);
   return grupo;
 }
 // ============================================
