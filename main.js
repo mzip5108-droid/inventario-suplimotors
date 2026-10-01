@@ -845,16 +845,16 @@ const INFO_ESTANTES = {
     letras: 'ABCD',
     nombre: 'Estante medio 2'
   },
-  'EST-SUP-01': {
-    x: 0, y: 0, z: 6.7,
-    rotacionY: Math.PI / 2,
-    ancho: 3.5,
-    alto: 3,
-    repisas: 4,
-    columnas: 6,
-    letras: 'ABCDEF',
-    nombre: 'Estante superior (doble cara)'
-  },
+'EST-SUP-01': {
+  x: 0, y: 0, z: 6.7,
+  rotacionY: Math.PI / 2,
+  ancho: 3.5,
+  alto: 3,
+  repisas: 3,
+  columnas: 6,
+  letras: 'ABCDEF',
+  nombre: 'Estante superior'
+},
   'EST-DER-02': {
     x: 2, y: 0, z: -3.4,
     rotacionY: Math.PI / 2,
