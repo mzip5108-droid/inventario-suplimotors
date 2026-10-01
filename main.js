@@ -872,7 +872,7 @@ function crearObjetoDesdeItem(item) {
   const tamItem    = 0.18;
   const alturaItem = tamItem * 1.0;
 
-  // --- Cuántos items (torres) ya existen en esta celda ---
+  // --- Cuántos items (grupos) ya existen en esta celda ---
   let itemsEnSlot = 0;
   scene.children.forEach(hijo => {
     if (hijo.isGroup && hijo.userData
@@ -887,8 +887,7 @@ function crearObjetoDesdeItem(item) {
   // --- Cuántos items TOTALES habrá en esta celda ---
   const totalItems = itemsEnSlot + 1;
 
-  // --- Ancho disponible para cada item dentro de la celda ---
-  // Dejamos un margen de 0.1 a cada lado de la celda
+  // --- Cuánto espacio del ancho de la celda usa cada item ---
   const margenCelda = 0.1;
   const anchoDisponible = anchoCelda - margenCelda * 2;
   const anchoPorItem = anchoDisponible / totalItems;
@@ -896,35 +895,48 @@ function crearObjetoDesdeItem(item) {
   // --- Índice del item dentro de la celda ---
   const miIndice = itemsEnSlot;
 
-  // --- Posición X LOCAL del item (dentro del ancho del estante) ---
-  // Cada item ocupa un "carril" de anchoPorItem, empezando por la izquierda
-  const offsetLocalX = info.ancho / 2
-                     - anchoCelda * (info.letras.indexOf(item.seccion) + 1)
-                     + margenCelda
-                     + anchoPorItem * (miIndice + 0.5);
+  // ============================================================
+  // CALCULAR LA POSICIÓN LOCAL DEL ITEM DENTRO DEL ESTANTE
+  // (Antes de aplicar la rotación del estante)
+  // ============================================================
+
+  // 1. Centro LOCAL de la celda en el eje X del estante
+  const indiceColumna = info.letras.indexOf(item.seccion);
+  const centroCeldaLocalX = info.ancho / 2 - anchoCelda * (indiceColumna + 0.5);
+
+  // 2. Offset DENTRO de la celda
+  //    Vamos desde el borde izquierdo de la celda hacia la derecha.
+  //    El borde izquierdo de la celda está en:
+  //    centroCeldaLocalX - anchoCelda / 2
+  const bordeIzqCelda = centroCeldaLocalX - anchoCelda / 2;
+  const offsetDentroCelda = margenCelda + anchoPorItem * (miIndice + 0.5);
+
+  // 3. Posición local final en el eje X del estante
+  const offsetLocalX = bordeIzqCelda + offsetDentroCelda;
+
+  // 4. Posición local en Z (dentro del estante, el "frente" del estante)
   const offsetLocalZ = 0;
 
-  // --- Rotación del estante ---
+  // ============================================================
+  // APLICAR LA ROTACIÓN DEL ESTANTE
+  // ============================================================
   const cos = Math.cos(info.rotacionY);
   const sin = Math.sin(info.rotacionY);
 
-  // --- Aplicar rotación al offset local ---
-  const xLocal = offsetLocalX * cos - offsetLocalZ * sin;
-  const zLocal = offsetLocalX * sin + offsetLocalZ * cos;
+  const xMundo = info.x + offsetLocalX * cos - offsetLocalZ * sin;
+  const zMundo = info.z + offsetLocalX * sin + offsetLocalZ * cos;
+  const yMundo = info.y + repisaY;
 
-  // --- Posición base del item ---
-  const posX = info.x + xLocal;
-  const posZ = info.z + zLocal;
-  const posY = info.y + repisaY;
-
-  // --- Apilar tantas cajas como indique la cantidad ---
+  // ============================================================
+  // CREAR LAS CAJAS (apiladas según la cantidad)
+  // ============================================================
   for (let n = 0; n < cantidad; n++) {
     const caja = crearCajaItem(color, tamItem, n);
 
     caja.position.set(
-      posX,
-      posY + (n * alturaItem),
-      posZ
+      xMundo,
+      yMundo + (n * alturaItem),
+      zMundo
     );
 
     caja.rotation.y = 0;
