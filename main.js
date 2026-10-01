@@ -707,7 +707,24 @@ btnRegist.addEventListener('click', async () => {
   }
 
   console.log('📝 Registrando:', { nombre, categoria, cantidad, estante, repisa });
+ // ============================================
+  // VERIFICAR QUE EL NOMBRE NO ESTÉ REPETIDO
+  // ============================================
+  const todosLosItemsActuales = await obtenerTodos();
+  const nombreNormalizado = nombre.toLowerCase().trim();
+  const duplicado = todosLosItemsActuales.find(i => 
+    i.nombre.toLowerCase().trim() === nombreNormalizado
+  );
 
+  if (duplicado) {
+    alert(
+      `❌ Ya existe un item con el nombre "${nombre}".\n\n` +
+      `Código existente: ${duplicado.codigo}\n` +
+      `Ubicación: ${duplicado.estante}-R${duplicado.repisa}-${duplicado.seccion}\n\n` +
+      `Usa otro nombre.`
+    );
+    return;
+  }
   // --- Guardar en Supabase ---
   const itemGuardado = await registrarItem({
     nombre,
@@ -834,7 +851,7 @@ console.log('  R3-E:', calcularPosicionSlot('EST-IZQ-01', 3, 'E'));
 // ============================================
 function crearObjetoDesdeItem(item) {
   // Calcular posición base del slot
-  const posBase = calcularPosicionSlot(
+  const posBase = calcularPosicionLibreEnSlot(
     item.estante,
     item.repisa || 0,
     item.seccion || 'E'
@@ -1835,7 +1852,20 @@ function renderizarItemsEstante(items) {
       transition: transform 0.15s, background 0.15s;
     `;
 
-   
+       card.innerHTML = `
+      <div style="font-weight:bold; font-size:14px; margin-bottom:5px;">
+        ${item.nombre}
+      </div>
+      <div style="font-size:11px; color:#aaa; margin-bottom:3px;">
+        Código: ${item.codigo}
+      </div>
+      <div style="font-size:11px; color:#aaa; margin-bottom:3px;">
+        📍 ${item.estante}-R${item.repisa}-${item.seccion}
+      </div>
+      <div style="font-size:11px; color:#4aff4a;">
+        Cantidad: ${item.cantidad}
+      </div>
+    `;
 
     // Al hacer clic, abre la ficha del item
     card.addEventListener('click', () => {
@@ -2075,3 +2105,43 @@ linkUbicacionManual.addEventListener('click', (e) => {
   if (!codigo) return;
   procesarUbicacion(codigo);
 });
+// ============================================
+// CALCULAR POSICIÓN LIBRE EN UN SLOT
+// ============================================
+function calcularPosicionLibreEnSlot(estanteId, repisa, seccion) {
+  const posBase = calcularPosicionSlot(estanteId, repisa, seccion);
+  const info = INFO_ESTANTES[estanteId];
+  
+  if (!info) return posBase;
+  
+  // Buscar cuántos grupos ya existen en este slot
+  let itemsEnSlot = 0;
+  scene.children.forEach(hijo => {
+    if (hijo.isGroup && hijo.userData 
+        && hijo.userData.estante === estanteId
+        && hijo.userData.repisa === repisa 
+        && hijo.userData.seccion === seccion) {
+      itemsEnSlot++;
+    }
+  });
+  
+  // Si es el primero, posición base
+  if (itemsEnSlot === 0) {
+    return posBase;
+  }
+  
+  // Distribuir en cuadrícula 3x3 y luego apilar hacia arriba
+  const col = itemsEnSlot % 3;                    // 0, 1, 2
+  const fila = Math.floor(itemsEnSlot / 3) % 3;   // 0, 1, 2
+  const capa = Math.floor(itemsEnSlot / 9);       // 0, 1, 2... (apilamiento en Y)
+  
+  const offsetX = (col - 1) * 0.2;      // -0.2, 0, +0.2
+  const offsetZ = (fila - 1) * 0.15;    // -0.15, 0, +0.15
+  const offsetY = capa * 0.25;          // apilar hacia arriba
+  
+  return [
+    posBase[0] + offsetX,
+    posBase[1] + offsetY,
+    posBase[2] + offsetZ
+  ];
+}
