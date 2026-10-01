@@ -785,7 +785,7 @@ const INFO_ESTANTES = {
     alto: 3,
     repisas: 4,
     columnas: 9,
-    letras: 'ABCDEFGHI',
+    letras: 'IHGFEDCBA',
     nombre: 'Estante izquierdo'
   }
 };
