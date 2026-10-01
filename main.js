@@ -785,7 +785,7 @@ const INFO_ESTANTES = {
     alto: 3,
     repisas: 4,
     columnas: 9,
-    letras: 'IHGFEDCBA',
+    letras: 'ABCDEFGHI',
     nombre: 'Estante izquierdo'
   }
 };
@@ -803,7 +803,7 @@ function calcularPosicionSlot(estanteId, repisa, seccion) {
   // --- Posición LOCAL dentro del estante (sin rotación) ---
   const anchoColumna = info.ancho / info.columnas;
   const indiceColumna = info.letras.indexOf(seccion);
-  const offsetXLocal = -info.ancho / 2 + anchoColumna * (indiceColumna + 0.5);
+  const offsetXLocal = info.ancho / 2 + anchoColumna * (indiceColumna + 0.5);
   const yLocal = repisa * ALTURA_REPISA + 0.05;
   const zLocal = 0;
 
