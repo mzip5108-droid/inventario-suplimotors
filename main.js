@@ -919,8 +919,8 @@ function crearObjetoDesdeItem(item) {
   const anchoCelda = info.ancho / info.columnas;
   const repisaY    = (item.repisa || 0) * ALTURA_REPISA + 0.05;
   const tamItem    = 0.18;
-  const alturaItem = tamItem * 1.0;
-  const margenCelda = 0.15;                    // margen a los lados de la celda
+  const alturaItem = tamItem * 0.75;
+  const margenCelda = 0.25;                    // margen a los lados de la celda
   const totalItems = itemsEnCelda.length;
   const anchoDisponible = anchoCelda - margenCelda * 2;
   const anchoPorItem = anchoDisponible / totalItems;
@@ -941,7 +941,7 @@ function crearObjetoDesdeItem(item) {
 
   itemsEnCelda.forEach((it, idx) => {
     const color = colorPorCategoria(it.categoria);
-    const cantidad = Math.min(it.cantidad || 1, 10);
+    const cantidad = Math.min(it.cantidad || 1, 5);
 
     const grupo = new THREE.Group();
     grupo.name = it.codigo;
