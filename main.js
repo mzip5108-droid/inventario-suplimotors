@@ -949,7 +949,7 @@ function crearCajaItem(color, tamaño, indice) {
 // ============================================
 function colorPorCategoria(categoria) {
   const colores = {
-    Bombadeaceite: 0x3366cc,
+    bombadeaceite: 0x3366cc,
     fijaciones:   0xaa3333,
     electrico:    0x33aa77,
     plomeria:     0x66ccaa,
@@ -1125,7 +1125,7 @@ function renderizarItems(items) {
 // --- Helper: color en formato CSS desde el hex de categoría ---
 function colorHex(categoria) {
   const colores = {
-    herramientas: '#3366cc', fijaciones: '#aa3333', electrico: '#33aa77',
+    bombadeaceite: '#3366cc', fijaciones: '#aa3333', electrico: '#33aa77',
     plomeria: '#66ccaa', pintura: '#eeeeee', seguridad: '#ffaa33',
     general: '#888888'
   };
