@@ -1083,25 +1083,29 @@ const btnEscanearItem        = document.getElementById('btnEscanearItem');
 const toggleModoDistribucion = document.getElementById('toggleModoDistribucion');
 const listaAsignacionItems    = document.getElementById('listaAsignacionItems');
 const contenidoAsignacionItems = document.getElementById('contenidoAsignacionItems');
+const btnVolverCategorias = document.getElementById('btnVolverCategorias');
 
 
 // Cache de todos los items (para no consultar Supabase cada vez)
 let todosLosItems = [];
 let itemActualEnFicha = null; 
 let callbackEscaner = null; 
-
+let categoriaActualFiltro = null;
 // --- Abrir el panel ---
 btnVerInventario.addEventListener('click', async () => {
   panelInventario.style.display = 'block';
   overlay.style.display = 'block';
 
-  // Cargar items desde Supabase (solo la primera vez)
   if (todosLosItems.length === 0) {
     listaItems.innerHTML = '<p style="color:#aaa; text-align:center;">Cargando items...</p>';
     todosLosItems = await obtenerTodos();
   }
 
-  renderizarItems(todosLosItems);
+  // Resetear al nivel de categorías
+  categoriaActualFiltro = null;
+  inputBuscar.value = '';
+
+  renderizarItemsFiltrados();
 });
 
 // --- Cerrar el panel ---
@@ -1109,26 +1113,117 @@ btnCerrarInventario.addEventListener('click', () => {
   panelInventario.style.display = 'none';
   overlay.style.display = 'none';
   inputBuscar.value = '';
+  categoriaActualFiltro = null;
+});
+
+// --- Volver a categorías ---
+btnVolverCategorias.addEventListener('click', () => {
+  categoriaActualFiltro = null;
+  inputBuscar.value = '';
+  renderizarItemsFiltrados();
 });
 
 // --- Buscador ---
-inputBuscar.addEventListener('input', () => {
-  const texto = inputBuscar.value.toLowerCase().trim();
-  const filtrados = todosLosItems.filter(item => {
-    return (
-      item.nombre?.toLowerCase().includes(texto) ||
-      item.codigo?.toLowerCase().includes(texto) ||
-      item.categoria?.toLowerCase().includes(texto) ||
-      item.estante?.toLowerCase().includes(texto) ||
-      item.seccion?.toLowerCase().includes(texto)
-    );
-  });
-  renderizarItems(filtrados);
-});
+inputBuscar.addEventListener('input', renderizarItemsFiltrados);
 
-// --- Renderizar la lista ---
+// ============================================
+// RENDERIZAR CATEGORÍAS
+// ============================================
+function renderizarCategorias(items) {
+  contadorItems.textContent = `${items.length} item${items.length !== 1 ? 's' : ''} en total`;
+  btnVolverCategorias.style.display = 'none';
+
+  if (items.length === 0) {
+    listaItems.innerHTML = `
+      <p style="color:#888; text-align:center; grid-column: 1 / -1;">
+        No hay items en el inventario
+      </p>`;
+    return;
+  }
+
+  const conteoCategorias = {};
+  items.forEach(item => {
+    const cat = item.categoria || 'general';
+    conteoCategorias[cat] = (conteoCategorias[cat] || 0) + 1;
+  });
+
+  const colores = {
+    bombadeaceite: '#3366cc',
+    fijaciones:    '#aa3333',
+    electrico:     '#33aa77',
+    plomeria:      '#66ccaa',
+    pintura:       '#eeeeee',
+    seguridad:     '#ffaa33',
+    general:       '#888888'
+  };
+
+  const emojis = {
+    bombadeaceite: '🛢️',
+    fijaciones:    '🔩',
+    electrico:     '⚡',
+    plomeria:      '🚿',
+    pintura:       '🎨',
+    seguridad:     '🦺',
+    general:       '📦'
+  };
+
+  listaItems.innerHTML = '';
+
+  Object.entries(conteoCategorias).forEach(([cat, count]) => {
+    const card = document.createElement('div');
+    card.style.cssText = `
+      background: #2a2a3e;
+      border-left: 4px solid ${colores[cat] || '#888888'};
+      border-radius: 10px;
+      padding: 20px;
+      cursor: pointer;
+      transition: transform 0.15s, background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    `;
+
+    card.innerHTML = `
+      <div style="font-weight:bold; font-size:16px;">
+        ${emojis[cat] || '📦'} ${cat}
+      </div>
+      <div style="
+        font-size:13px;
+        color:#4aff4a;
+        background:#1a2a1a;
+        padding:4px 10px;
+        border-radius:12px;
+        font-weight:bold;
+      ">${count}</div>
+    `;
+
+    card.addEventListener('click', () => {
+      categoriaActualFiltro = cat;
+      inputBuscar.value = '';
+      renderizarItemsFiltrados();
+    });
+
+    card.addEventListener('mouseenter', () => {
+      card.style.background = '#3a3a4e';
+      card.style.transform = 'translateY(-2px)';
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.background = '#2a2a3e';
+      card.style.transform = 'translateY(0)';
+    });
+
+    listaItems.appendChild(card);
+  });
+}
+
+
+// ============================================
+// RENDERIZAR ITEMS
+// ============================================
 function renderizarItems(items) {
   contadorItems.textContent = `${items.length} item${items.length !== 1 ? 's' : ''} encontrado${items.length !== 1 ? 's' : ''}`;
+  btnVolverCategorias.style.display = 'block';
 
   if (items.length === 0) {
     listaItems.innerHTML = `
@@ -1151,10 +1246,9 @@ function renderizarItems(items) {
       transition: transform 0.15s, background 0.15s;
     `;
 
-    // Emoji según categoría
     card.innerHTML = `
       <div style="font-weight:bold; font-size:14px; margin-bottom:5px;">
-         ${item.nombre}
+        ${item.nombre}
       </div>
       <div style="font-size:11px; color:#aaa; margin-bottom:3px;">
         Código: ${item.codigo}
@@ -1167,11 +1261,10 @@ function renderizarItems(items) {
       </div>
     `;
 
-  card.addEventListener('click', () => {
-    abrirFicha(item);
-  });
+    card.addEventListener('click', () => {
+      abrirFicha(item);
+    });
 
-    // Hover
     card.addEventListener('mouseenter', () => {
       card.style.background = '#3a3a4e';
       card.style.transform = 'translateY(-2px)';
@@ -1184,6 +1277,38 @@ function renderizarItems(items) {
     listaItems.appendChild(card);
   });
 }
+
+
+// ============================================
+// DECIDIR QUÉ MOSTRAR (categorías o items)
+// ============================================
+function renderizarItemsFiltrados() {
+  const texto = inputBuscar.value.toLowerCase().trim();
+
+  if (texto.length > 0) {
+    const filtrados = todosLosItems.filter(item => {
+      return (
+        item.nombre?.toLowerCase().includes(texto) ||
+        item.codigo?.toLowerCase().includes(texto) ||
+        item.categoria?.toLowerCase().includes(texto) ||
+        item.estante?.toLowerCase().includes(texto) ||
+        item.seccion?.toLowerCase().includes(texto)
+      );
+    });
+    renderizarItems(filtrados);
+    return;
+  }
+
+  if (categoriaActualFiltro === null) {
+    renderizarCategorias(todosLosItems);
+  } else {
+    const filtrados = todosLosItems.filter(
+      item => item.categoria === categoriaActualFiltro
+    );
+    renderizarItems(filtrados);
+  }
+}
+
 
 // --- Helper: color en formato CSS desde el hex de categoría ---
 function colorHex(categoria) {
