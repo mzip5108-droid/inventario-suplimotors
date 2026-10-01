@@ -259,13 +259,13 @@ scene.add(estanteAtras);
 
 const estante_sup_izq = crearEstante(3.5, 3, 1, 4, 1);
 estante_sup_izq.name = 'EST-SUP-IZQ';
-estante_sup_izq.position.set(-1, 0, 6.7);
+estante_sup_izq.position.set(-0.5, 0, 6.7);
 estante_sup_izq.rotation.y = Math.PI / 2;
 scene.add(estante_sup_izq);
 
 const estante_sup_der = crearEstante(3.5, 3, 1, 4, 1);
 estante_sup_der.name = 'EST-SUP-DER';
-estante_sup_der.position.set(1, 0, 6.7);
+estante_sup_der.position.set(0.5, 0, 6.7);
 estante_sup_der.rotation.y = Math.PI / 2;
 scene.add(estante_sup_der);
 
