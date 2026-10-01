@@ -1492,40 +1492,25 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
       return;
     }
 
-    // 2. Calcular cuántos slots necesitamos y si hay espacio
-    const slotsDestino = generarSlotsDesde(
-      estante, repisa, seccion, itemsDeCategoria.length
-    );
-
-    if (slotsDestino.length < itemsDeCategoria.length) {
-      alert(
-        `⚠️ No hay suficientes slots desde R${repisa}-${seccion}.\n\n` +
-        `Necesitas: ${itemsDeCategoria.length}\n` +
-        `Disponibles: ${slotsDestino.length}\n\n` +
-        `Prueba con un punto de inicio anterior.`
-      );
-      return;
-    }
-
-    // 3. Confirmar acción (es destructiva)
+    // 2. Confirmar acción (es destructiva)
     const ok = confirm(
       `Vas a mover ${itemsDeCategoria.length} item(s) de "${categoria}".\n\n` +
-      `Destino: ${estante} empezando en R${repisa}-${seccion}\n` +
-      `Se repartirán en ${slotsDestino.length} slot(s).\n\n` +
+      `Todos irán al mismo slot:\n` +
+      `${estante}-R${repisa}-${seccion}\n\n` +
       `¿Continuar?`
     );
     if (!ok) return;
 
-    // 4. Mover uno por uno
+    // 3. Mover uno por uno (todos al mismo slot)
     let movidos = 0;
     let fallidos = 0;
 
     for (let i = 0; i < itemsDeCategoria.length; i++) {
       const item = itemsDeCategoria[i];
-      const slot = slotsDestino[i];
 
+      // Todos van al MISMO destino (estante, repisa, seccion)
       const ok = await actualizarUbicacion(
-        item.codigo, estante, slot.repisa, slot.seccion
+        item.codigo, estante, repisa, seccion
       );
 
       if (!ok) {
@@ -1537,17 +1522,17 @@ btnConfirmarMoverQR.addEventListener('click', async () => {
       // Mover el objeto 3D si existe en la escena
       const obj3D = scene.getObjectByName(item.codigo);
       if (obj3D) {
-        const pos = calcularPosicionLibreEnSlot(estante, slot.repisa, slot.seccion);
+        const pos = calcularPosicionLibreEnSlot(estante, repisa, seccion);
         obj3D.position.set(...pos);
         obj3D.userData.estante = estante;
-        obj3D.userData.repisa = slot.repisa;
-        obj3D.userData.seccion = slot.seccion;
+        obj3D.userData.repisa = repisa;
+        obj3D.userData.seccion = seccion;
       }
 
       // Actualizar caché local
       todosLosItems = todosLosItems.map(x =>
         x.codigo === item.codigo
-          ? { ...x, estante, repisa: slot.repisa, seccion: slot.seccion }
+          ? { ...x, estante, repisa, seccion }
           : x
       );
 
