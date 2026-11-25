@@ -1,755 +1,934 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta charset="UTF-8" />
   <title>Inventario SupliMotors</title>
-<style>
-  body { margin: 0; overflow: hidden; background: #111; }
-  canvas { display: block; }
+  <style>
+    body { margin: 0; overflow: hidden; background: #111; }
+    canvas { display: block; }
 
-  /* ============================================
-     ESTILOS RESPONSIVE PARA MÓVIL
-     ============================================ */
-
-  /* Los botones flotantes en móvil se reorganizan */
-  @media (max-width: 768px) {
-    /* Botones flotantes más chicos y agrupados abajo */
-    #btnAbrirPanel,
-    #btnVerInventario,
-    #btnVerCodigos,
-    #btnEscanearQR {
-      padding: 10px 12px !important;
-      font-size: 11px !important;
-      bottom: 15px !important;
-      right: auto !important;
-      left: auto !important;
-      transform: none !important;
+    /* ============================================ */
+    /* DOCK DE BOTONES PRO (AGRANDADO)              */
+    /* ============================================ */
+    #dock {
+      position: fixed;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      padding: 10px;
+      background: rgba(30, 30, 46, 0.9);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      transition: all 0.3s ease;
     }
 
-    #btnAbrirPanel     { left: 10px !important; }
-    #btnVerInventario  { left: 33% !important; }
-    #btnVerCodigos     { left: 56% !important; }
-    #btnEscanearQR     { left: 79% !important; }
-
-    /* Paneles más anchos en móvil */
-    #panelRegistro,
-    #panelInventario,
-    #panelFicha,
-    #panelMoverQR,
-    #panelCodigos,
-    #panelEstante,
-    #panelEscaner {
-      width: 95% !important;
-      max-width: 95% !important;
-      padding: 18px !important;
-      max-height: 90vh !important;
+    .dock-btn {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-width: 80px;
+      padding: 14px 16px;
+      background: transparent;
+      border: none;
+      border-radius: 14px;
+      color: #ccc;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: Arial, sans-serif;
     }
 
-    /* Textos más grandes en móvil */
-    #panelRegistro h2,
-    #panelInventario h2,
-    #panelFicha h2,
-    #panelMoverQR h2,
-    #panelCodigos h2,
-    #panelEstante h2,
-    #panelEscaner h2 {
-      font-size: 18px !important;
+    .dock-btn svg {
+      width: 28px;
+      height: 28px;
+      transition: transform 0.2s ease;
     }
 
-    /* Inputs más grandes para dedos */
-    #panelRegistro input,
-    #panelRegistro select,
-    #panelInventario input,
-    #panelMoverQR input,
-    #panelCodigos input,
-    #panelEstante input {
-      font-size: 16px !important;
-      padding: 12px !important;
+    .dock-label {
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      opacity: 0.85;
+      transition: opacity 0.2s;
     }
 
-    /* Botones más grandes */
-    #panelRegistro button,
-    #panelInventario button,
-    #panelFicha button,
-    #panelMoverQR button,
-    #panelCodigos button,
-    #panelEstante button,
-    #panelEscaner button {
-      font-size: 15px !important;
-      padding: 14px !important;
+    .dock-btn:hover {
+      background: rgba(74, 122, 184, 0.25);
+      color: #fff;
     }
 
-    /* Listas en 1 columna */
-    #listaItems,
-    #listaItemsEstante {
-      grid-template-columns: 1fr !important;
+    .dock-btn:hover svg {
+      transform: translateY(-3px) scale(1.1);
     }
 
-    /* Códigos en 2 columnas */
-    #listaCodigos {
-      grid-template-columns: repeat(2, 1fr) !important;
+    .dock-btn:hover .dock-label {
+      opacity: 1;
     }
 
-    /* Ficha con QR más grande */
-    #fichaQR canvas {
-      width: 200px !important;
-      height: 200px !important;
-    }
-  }
-
-  /* Pantallas muy chicas (menos de 400px) */
-  @media (max-width: 400px) {
-    #listaCodigos {
-      grid-template-columns: 1fr !important;
+    .dock-btn:active {
+      transform: scale(0.92);
+      background: rgba(74, 122, 184, 0.5);
     }
 
-    #btnAbrirPanel,
-    #btnVerInventario,
-    #btnVerCodigos,
-    #btnEscanearQR {
-      font-size: 10px !important;
-      padding: 8px 6px !important;
+    .dock-btn-danger:hover {
+      background: rgba(163, 40, 40, 0.35);
+      color: #ff8888;
     }
-  }
-</style>
+
+    /* Tooltip en PC */
+    .dock-btn::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 115%;
+      left: 50%;
+      transform: translateX(-50%) translateY(5px);
+      padding: 6px 12px;
+      background: #111;
+      color: white;
+      font-size: 12px;
+      border-radius: 8px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .dock-btn:hover::after {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ============================================ */
+    /* ANIMACIONES                                  */
+    /* ============================================ */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============================================ */
+    /* RESPONSIVE: MOVIL Y PANTALLAS CHICAS         */
+    /* ============================================ */
+    @media (max-width: 768px) {
+      #dock {
+        bottom: 0;
+        left: 0;
+        right: 0;
+        transform: none;
+        border-radius: 24px 24px 0 0;
+        padding: 10px 6px;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom));
+        justify-content: space-around;
+        gap: 4px;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+      }
+
+      .dock-btn {
+        flex: 1;
+        min-width: 0;
+        padding: 12px 6px;
+        gap: 5px;
+      }
+
+      .dock-btn svg {
+        width: 26px;
+        height: 26px;
+      }
+
+      .dock-label {
+        font-size: 10px;
+        letter-spacing: 0.3px;
+      }
+
+      .dock-btn::after {
+        display: none; /* Sin tooltips en movil */
+      }
+
+      .dock-btn:active {
+        transform: scale(0.85);
+      }
+
+      /* Ajustar los paneles para que no queden tapados por el dock */
+      #panelRegistro,
+      #panelInventario,
+      #panelFicha,
+      #panelMoverQR,
+      #panelCodigos,
+      #panelEstante,
+      #panelEscaner {
+        margin-bottom: 80px;
+        width: 95% !important;
+        max-width: 95% !important;
+        padding: 18px !important;
+        max-height: 85vh !important;
+      }
+
+      /* Textos mas grandes en movil */
+      #panelRegistro h2,
+      #panelInventario h2,
+      #panelFicha h2,
+      #panelMoverQR h2,
+      #panelCodigos h2,
+      #panelEstante h2,
+      #panelEscaner h2 {
+        font-size: 18px !important;
+      }
+
+      /* Inputs mas grandes para dedos */
+      #panelRegistro input,
+      #panelRegistro select,
+      #panelInventario input,
+      #panelMoverQR input,
+      #panelCodigos input,
+      #panelEstante input {
+        font-size: 16px !important;
+        padding: 12px !important;
+      }
+
+      /* Botones mas grandes */
+      #panelRegistro button,
+      #panelInventario button,
+      #panelFicha button,
+      #panelMoverQR button,
+      #panelCodigos button,
+      #panelEstante button,
+      #panelEscaner button {
+        font-size: 15px !important;
+        padding: 14px !important;
+      }
+
+      /* Listas en 1 columna */
+      #listaItems,
+      #listaItemsEstante {
+        grid-template-columns: 1fr !important;
+      }
+
+      /* Codigos en 2 columnas */
+      #listaCodigos {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+
+      /* Ficha con QR mas grande */
+      #fichaQR canvas {
+        width: 200px !important;
+        height: 200px !important;
+      }
+    }
+
+    /* Pantallas muy chicas (menos de 400px) */
+    @media (max-width: 400px) {
+      .dock-label {
+        font-size: 9px;
+      }
+      .dock-btn svg {
+        width: 24px;
+        height: 24px;
+      }
+      .dock-btn {
+        padding: 10px 4px;
+      }
+      #listaCodigos {
+        grid-template-columns: 1fr !important;
+      }
+    }
+  </style>
 </head>
 <body>
-  <!-- Carga main.js como módulo (obligatorio para usar import) -->
   <script type="module" src="/main.js"></script>
 
-
-
-<!-- ============================================ -->
-<!-- PANEL DE REGISTRO DE ITEMS                   -->
-<!-- ============================================ -->
-
-<!-- Botón flotante -->
-<button id="btnAbrirPanel" style="
-  position: fixed; bottom: 25px; right: 25px;
-  padding: 15px 22px; background: #4a7ab8; color: white;
-  border: none; border-radius: 50px; cursor: pointer;
-  font-family: Arial; font-size: 16px; font-weight: bold;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-  z-index: 100;
-  transition: transform 0.2s;
-"> Añadir item</button>
-
-<!-- Botón para ver inventario -->
-<button id="btnVerInventario" style="
-  position: fixed; bottom: 25px; right: 200px;
-  padding: 15px 22px; background: #2a7a2a; color: white;
-  border: none; border-radius: 50px; cursor: pointer;
-  font-family: Arial; font-size: 16px; font-weight: bold;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-  z-index: 100;
-">Ver inventario</button>
-
-<!-- Botón para ver códigos de estantes -->
-<button id="btnVerCodigos" style="
-  position: fixed; bottom: 25px; right: 375px;
-  padding: 15px 22px; background: #7a4ab8; color: white;
-  border: none; border-radius: 50px; cursor: pointer;
-  font-family: Arial; font-size: 16px; font-weight: bold;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-  z-index: 100;
-">Ver códigos</button>
-
-<!-- Botón para escanear QR -->
-<button id="btnEscanearQR" style="
-  position: fixed; bottom: 25px; right: 550px;
-  padding: 15px 22px; background: #b84a7a; color: white;
-  border: none; border-radius: 50px; cursor: pointer;
-  font-family: Arial; font-size: 16px; font-weight: bold;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-  z-index: 100;
-"> Escanear QR</button>
-
-<!-- Overlay oscuro (fondo) -->
-<div id="overlay" style="
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.6);
-  display: none; z-index: 150;
-"></div>
-
-<!-- Panel del formulario -->
-<div id="panelRegistro" style="
-  position: fixed; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  background: #1e1e2e; color: white;
-  padding: 28px; border-radius: 16px;
-  font-family: Arial;
-  width: 380px;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-  display: none; z-index: 200;
-  scrollbar-width: thin;
-  scrollbar-color: #4a7ab8 #1e1e2e;
-">
-
-  <h2 style="margin: 0 0 20px 0; text-align: center; font-size: 20px;">
-     Añadir item
-  </h2>
-
-  <label style="display:block; margin-bottom:6px; font-size:13px; color:#aaa;">
-    Nombre del item:
-  </label>
-  <input id="inputNombre" type="text" placeholder="Ej: Kit de tiempo"
-    style="width:100%; padding:10px; margin-bottom:14px;
-           border-radius:8px; border:1px solid #333;
-           background:#2a2a3e; color:white; font-size:14px;
-           box-sizing:border-box;">
-
-  <label style="display:block; margin-bottom:6px; font-size:13px; color:#aaa;">
-    Categoría:
-  </label>
-  <select id="inputCategoria"
-    style="width:100%; padding:10px; margin-bottom:14px;
-           border-radius:8px; border:1px solid #333;
-           background:#2a2a3e; color:white; font-size:14px;
-           box-sizing:border-box;">
-    <option value="bombadeaceite"> Bomba de aceite</option>
-    <option value="fijaciones"> Fijaciones</option>
-    <option value="electrico"> Eléctrico</option>
-    <option value="plomeria"> Plomería</option>
-    <option value="pintura"> Pintura</option>
-    <option value="seguridad"> Seguridad</option>
-    <option value="general"> General</option>
-  </select>
-
-  <label style="display:block; margin-bottom:6px; font-size:13px; color:#aaa;">
-    Cantidad:
-  </label>
-  <input id="inputCantidad" type="number" min="1" value="1"
-    style="width:100%; padding:10px; margin-bottom:14px;
-           border-radius:8px; border:1px solid #333;
-           background:#2a2a3e; color:white; font-size:14px;
-           box-sizing:border-box;">
-
-<!-- ============================================ -->
-<!-- SECCIÓN DE UBICACIÓN (ESCANEO DE QR)        -->
-<!-- ============================================ -->
-<div style="
-  background: #2a2a3e; padding: 15px;
-  border-radius: 10px; margin-bottom: 20px;
-">
-  <p style="margin: 0 0 10px 0; font-size: 13px; color: #aaa;">
-    📍 Ubicación del item
-  </p>
-
-  <!-- Aviso de ubicación detectada -->
-  <div id="avisoUbicacion" style="
-    display: none;
-    background: #1a2a1a; padding: 12px;
-    border-radius: 8px; margin-bottom: 10px;
-    border-left: 4px solid #4aff4a;
-    font-family: monospace; font-size: 14px;
-    color: #4aff4a;
-    text-align: center;
-  ">—</div>
-
-  <!-- Botón de escanear -->
-  <button id="btnEscanearUbicacion" style="
-    width: 100%; padding: 12px;
-    background: #7a4ab8; color: white;
-    border: none; border-radius: 8px; cursor: pointer;
-    font-size: 14px; font-weight: bold;
-  ">📷 Escanear QR del estante</button>
-
-  <!-- Enlace para escribir manualmente (por si falla la cámara) -->
-  <p style="
-    text-align: center; font-size: 11px;
-    color: #888; margin: 10px 0 0 0;
+  <!-- ============================================ -->
+  <!-- PANTALLA DE LOGIN (SUPERPUESTA)              -->
+  <!-- ============================================ -->
+  <div id="loginScreen" style="
+    position: fixed; inset: 0; z-index: 9999;
+    background: radial-gradient(circle at center, #1e1e2e 0%, #111 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-family: Arial, sans-serif;
   ">
-    ¿No tienes el QR?
-    <a href="#" id="linkUbicacionManual" style="
-      color: #4a7ab8; text-decoration: underline;
-      cursor: pointer;
-    ">Escribe el código manualmente</a>
-  </p>
-
-  <!-- Inputs ocultos con los valores -->
-  <input type="hidden" id="inputEstante" value="">
-  <input type="hidden" id="inputRepisa" value="0">
-  <input type="hidden" id="inputSeccion" value="A">
-</div>
-
-  <div style="display:flex; gap:10px;">
-    <button id="btnCancelar" style="
-      flex: 1; padding: 12px;
-      background: #444; color: white;
-      border: none; border-radius: 8px;
-      cursor: pointer; font-size: 14px;
-    ">Cancelar</button>
-
-    <button id="btnRegistrar" style="
-      flex: 2; padding: 12px;
-      background: #4a7ab8; color: white;
-      border: none; border-radius: 8px;
-      cursor: pointer; font-size: 14px; font-weight: bold;
-    ">Registrar</button>
-  </div>
-
-  <!-- Aquí aparecerá el QR generado -->
-  <div id="qrPreview" style="margin-top: 20px; text-align: center;"></div>
-</div>
-<!-- Panel de inventario -->
-<div id="panelInventario" style="
-  position: fixed; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  background: #1e1e2e; color: white;
-  padding: 25px; border-radius: 16px;
-  font-family: Arial;
-  width: 90%; max-width: 800px;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-  display: none; z-index: 200;
-">
-  <h2 style="margin: 0 0 15px 0; text-align: center;">
-    Inventario de items
-  </h2>
-<button id="btnVolverCategorias" style="
-  display: none;
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 12px;
-  background: #444;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
-">⬅️ Volver a categorías</button>
-  <!-- Buscador -->
-  <input id="inputBuscar" type="text" placeholder="🔍 Buscar por nombre, código, categoría..."
-    style="width: 100%; padding: 12px; margin-bottom: 15px;
-           border-radius: 8px; border: 1px solid #333;
-           background: #2a2a3e; color: white; font-size: 14px;
-           box-sizing: border-box;">
-
-  <!-- Contador -->
-  <p id="contadorItems" style="
-    text-align: center; color: #aaa; font-size: 13px; margin-bottom: 15px;
-  ">Cargando...</p>
-
-  <!-- Lista de items -->
-  <div id="listaItems" style="
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 12px;
-  "></div>
-
-  <!-- Botón cerrar -->
-  <button id="btnCerrarInventario" style="
-    width: 100%; padding: 12px; margin-top: 20px;
-    background: #444; color: white; border: none;
-    border-radius: 8px; cursor: pointer; font-size: 14px;
-  ">Cerrar</button>
-</div>
-
-<!-- Ficha detallada de un item -->
-<div id="panelFicha" style="
-  position: fixed; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  background: #1e1e2e; color: white;
-  padding: 28px; border-radius: 16px;
-  font-family: Arial;
-  width: 90%; max-width: 400px;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-  display: none; z-index: 250;
-  text-align: center;
-">
-  <!-- Botón volver -->
-  <button id="btnVolverInventario" style="
-    position: absolute; top: 15px; left: 15px;
-    padding: 6px 12px; background: #444; color: white;
-    border: none; border-radius: 6px; cursor: pointer;
-    font-size: 13px;
-  ">⬅️<-- Volver</button>
-
-  <!-- Nombre -->
-  <h2 id="fichaNombre" style="
-    margin: 30px 0 8px 0; font-size: 22px;
-  ">Nombre del item</h2>
-
-  <!-- Código -->
-  <p id="fichaCodigo" style="
-    font-size: 14px; color: #4aff4a; margin-bottom: 20px;
-    font-family: monospace;
-  ">FERR-XXXX</p>
-
-  <!-- QR -->
-  <div id="fichaQR" style="
-    margin: 0 auto 20px auto; display: inline-block;
-    background: white; padding: 12px; border-radius: 10px;
-  "></div>
-
-  <!-- Datos -->
-  <div style="
-    text-align: left; background: #2a2a3e;
-    padding: 15px; border-radius: 10px; margin-bottom: 20px;
-    font-size: 14px;
-  ">
-    <p style="margin: 6px 0;">
-      <span style="color:#aaa;"> Categoría:</span>
-      <b id="fichaCategoria">—</b>
-    </p>
-    <p style="margin: 6px 0;">
-      <span style="color:#aaa;"> Cantidad:</span>
-      <b id="fichaCantidad">—</b>
-    </p>
-    <p style="margin: 6px 0;">
-      <span style="color:#aaa;"> Ubicación:</span>
-      <b id="fichaUbicacion">—</b>
-    </p>
-    <p style="margin: 6px 0;">
-      <span style="color:#aaa;"> Registrado:</span>
-      <b id="fichaFecha">—</b>
-    </p>
-  </div>
-
-    <!-- Botones de acción -->
-  <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-    <button id="btnVerEn3D" style="
-      flex: 1; padding: 12px;
-      background: #4a7ab8; color: white; border: none;
-      border-radius: 8px; cursor: pointer; font-size: 14px;
-      font-weight: bold;
-    "> Ver en 3D</button>
-
-    <button id="btnDescargarFichaQR" style="
-      flex: 1; padding: 12px;
-      background: #2a7a2a; color: white; border: none;
-      border-radius: 8px; cursor: pointer; font-size: 14px;
-      font-weight: bold;
-    ">⬇ Descargar QR</button>
-  </div>
-
-  <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-    <button id="btnMoverItem" style="
-      flex: 1; padding: 12px;
-      background: #b87a2a; color: white; border: none;
-      border-radius: 8px; cursor: pointer; font-size: 14px;
-      font-weight: bold;
-    ">Mover item</button>
-
-    <button id="btnEliminarItem" style="
-      flex: 1; padding: 12px;
-      background: #a32828; color: white; border: none;
-      border-radius: 8px; cursor: pointer; font-size: 14px;
-      font-weight: bold;
-    "> Eliminar</button>
-  </div>
-</div>
-<!-- Modal para mover item con QR -->
-<div id="panelMoverQR" style="
-  position: fixed; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  background: #1e1e2e; color: white;
-  padding: 28px; border-radius: 16px;
-  font-family: Arial;
-  width: 90%; max-width: 420px;
-  max-height: 90vh; overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-  display: none; z-index: 300;
-">
-
-  <!-- Botón cerrar -->
-  <button id="btnCerrarMoverQR" style="
-    position: absolute; top: 15px; right: 15px;
-    padding: 6px 10px; background: #444; color: white;
-    border: none; border-radius: 6px; cursor: pointer; font-size: 13px;
-  ">✕</button>
-
-  <h2 style="margin: 0 0 20px 0; text-align: center; font-size: 20px;">
-     Mover item
-  </h2>
-
-  <!-- Paso 1: escanear estante destino -->
-  <div id="pasoEstante" style="
-    background: #2a2a3e; padding: 18px; border-radius: 10px;
-    margin-bottom: 15px;
-  ">
-    <p style="margin: 0 0 12px 0; font-size: 14px; font-weight: bold;">
-       Paso 1: ¿A qué estante lo vas a mover?
-    </p>
-    <p style="margin: 0 0 12px 0; font-size: 12px; color: #aaa;">
-      Escanea el QR del estante/celda de destino o escribe el código manualmente.
-    </p>
-    <input id="inputEstanteDestino" type="text" placeholder="Ej: EST-IZQ-01-R2-E"
-      style="width: 100%; padding: 10px; margin-bottom: 10px;
-             border-radius: 8px; border: 1px solid #333;
-             background: #1e1e2e; color: white; font-size: 13px;
-             box-sizing: border-box; font-family: monospace;">
-    <button id="btnEscanearEstante" style="
-      width: 100%; padding: 10px;
-      background: #4a7ab8; color: white;
-      border: none; border-radius: 8px; cursor: pointer;
-      font-size: 13px; font-weight: bold;
-    "> Escanear QR del estante (próximamente)</button>
-  </div>
-
- <!-- Selector de modo: item individual o categoría completa -->
-  <div style="
-    background: #2a2a3e; padding: 18px; border-radius: 10px;
-    margin-bottom: 15px;
-  ">
-    <p style="margin: 0 0 12px 0; font-size: 14px; font-weight: bold;">
-      ¿Qué vas a mover?
-    </p>
-    <div style="display: flex; gap: 10px;">
-      <button id="btnModoItem" style="
-        flex: 1; padding: 12px;
-        background: #4a7ab8; color: white; border: 2px solid #4a7ab8;
-        border-radius: 8px; cursor: pointer; font-size: 13px;
-        font-weight: bold;
-      ">📦 Un item</button>
-
-      <button id="btnModoCategoria" style="
-        flex: 1; padding: 12px;
-        background: #2a2a3e; color: #aaa; border: 2px solid #444;
-        border-radius: 8px; cursor: pointer; font-size: 13px;
-        font-weight: bold;
-      ">🗂️ Una categoría</button>
-    </div>
-
-    <!-- Selector de categoría (oculto al inicio) -->
-    <select id="inputCategoriaMover" style="
-      display: none; width: 100%; padding: 10px; margin-top: 12px;
-      border-radius: 8px; border: 1px solid #333;
-      background: #1e1e2e; color: white; font-size: 14px;
-      box-sizing: border-box;
+    <div style="
+      background: rgba(30, 30, 46, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 40px 35px;
+      border-radius: 20px;
+      border: 1px solid rgba(74, 122, 184, 0.3);
+      box-shadow: 0 25px 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.1);
+      width: 100%; max-width: 380px;
+      text-align: center;
+      animation: fadeInUp 0.6s ease-out;
     ">
-      <option value="bombadeaceite"> Bomba de aceite</option>
-      <option value="fijaciones"> Fijaciones</option>
-      <option value="electrico"> Eléctrico</option>
-      <option value="plomeria"> Plomería</option>
-      <option value="pintura"> Pintura</option>
-      <option value="seguridad"> Seguridad</option>
-      <option value="general"> General</option>
+      <!-- Icono / Logo -->
+      <div style="
+        width: 70px; height: 70px; margin: 0 auto 20px auto;
+        background: linear-gradient(135deg, #4a7ab8, #7a4ab8);
+        border-radius: 20px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 32px;
+        box-shadow: 0 10px 25px rgba(74, 122, 184, 0.4);
+      ">🔐</div>
+
+      <h1 style="color: white; margin: 0 0 5px 0; font-size: 24px; font-weight: bold;">Bienvenido</h1>
+      <p style="color: #888; margin: 0 0 30px 0; font-size: 13px;">Ingresa tus credenciales al inventario</p>
+
+      <form id="formLogin" style="display: flex; flex-direction: column; gap: 15px;">
+        <div style="position: relative; text-align: left;">
+          <label style="color: #aaa; font-size: 11px; margin-left: 5px;">USUARIO</label>
+          <input type="text" id="loginUser" placeholder="Ej: admin" required
+            style="width: 100%; padding: 14px 16px; margin-top: 5px; box-sizing: border-box;
+                   background: #2a2a3e; border: 1px solid #333; border-radius: 10px;
+                   color: white; font-size: 14px; outline: none; transition: border 0.3s;"
+            onfocus="this.style.border='1px solid #4a7ab8'"
+            onblur="this.style.border='1px solid #333'">
+        </div>
+
+        <div style="position: relative; text-align: left;">
+          <label style="color: #aaa; font-size: 11px; margin-left: 5px;">CONTRASEÑA</label>
+          <input type="password" id="loginPass" placeholder="********" required
+            style="width: 100%; padding: 14px 16px; margin-top: 5px; box-sizing: border-box;
+                   background: #2a2a3e; border: 1px solid #333; border-radius: 10px;
+                   color: white; font-size: 14px; outline: none; transition: border 0.3s;"
+            onfocus="this.style.border='1px solid #4a7ab8'"
+            onblur="this.style.border='1px solid #333'">
+        </div>
+
+        <button type="submit" id="btnLogin" style="
+          width: 100%; padding: 15px; margin-top: 10px;
+          background: linear-gradient(135deg, #4a7ab8, #5a5ab8);
+          color: white; border: none; border-radius: 10px;
+          font-size: 15px; font-weight: bold; cursor: pointer;
+          transition: transform 0.2s, box-shadow 0.2s;
+          box-shadow: 0 8px 20px rgba(74, 122, 184, 0.3);
+        "
+        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 12px 25px rgba(74, 122, 184, 0.5)'"
+        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 8px 20px rgba(74, 122, 184, 0.3)'"
+        >Entrar al sistema</button>
+
+        <p id="loginError" style="color: #ff5555; font-size: 12px; margin: 5px 0 0 0; display: none;"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- DOCK DE BOTONES PRO (AGRANDADO)              -->
+  <!-- ============================================ -->
+  <nav id="dock" aria-label="Menu principal">
+    <button class="dock-btn" id="btnAbrirPanel" data-tooltip="Anadir item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      <span class="dock-label">Añadir</span>
+    </button>
+
+    <button class="dock-btn" id="btnVerInventario" data-tooltip="Ver inventario">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+      </svg>
+      <span class="dock-label">Inventario</span>
+    </button>
+
+    <button class="dock-btn" id="btnVerCodigos" data-tooltip="Codigos de estantes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+      </svg>
+      <span class="dock-label">Códigos</span>
+    </button>
+
+    <button class="dock-btn" id="btnEscanearQR" data-tooltip="Escanear QR">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+        <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+        <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+        <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+        <line x1="7" y1="12" x2="17" y2="12"></line>
+      </svg>
+      <span class="dock-label">Escanear</span>
+    </button>
+
+    <button class="dock-btn dock-btn-danger" id="btnLogout" data-tooltip="Cerrar sesion">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+        <polyline points="16 17 21 12 16 7"></polyline>
+        <line x1="21" y1="12" x2="9" y2="12"></line>
+      </svg>
+      <span class="dock-label">Salir</span>
+    </button>
+  </nav>
+
+  <!-- Overlay oscuro (fondo) -->
+  <div id="overlay" style="
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none; z-index: 150;
+  "></div>
+
+  <!-- ============================================ -->
+  <!-- PANEL DE REGISTRO DE ITEMS                   -->
+  <!-- ============================================ -->
+  <div id="panelRegistro" style="
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1e1e2e; color: white;
+    padding: 28px; border-radius: 16px;
+    font-family: Arial;
+    width: 380px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    display: none; z-index: 200;
+    scrollbar-width: thin;
+    scrollbar-color: #4a7ab8 #1e1e2e;
+  ">
+    <h2 style="margin: 0 0 20px 0; text-align: center; font-size: 20px;">
+      Añadir item
+    </h2>
+
+    <label style="display:block; margin-bottom:6px; font-size:13px; color:#aaa;">
+      Nombre del item:
+    </label>
+    <input id="inputNombre" type="text" placeholder="Ej: Kit de tiempo"
+      style="width:100%; padding:10px; margin-bottom:14px;
+             border-radius:8px; border:1px solid #333;
+             background:#2a2a3e; color:white; font-size:14px;
+             box-sizing:border-box;">
+
+    <label style="display:block; margin-bottom:6px; font-size:13px; color:#aaa;">
+      Categoría:
+    </label>
+    <select id="inputCategoria"
+      style="width:100%; padding:10px; margin-bottom:14px;
+             border-radius:8px; border:1px solid #333;
+             background:#2a2a3e; color:white; font-size:14px;
+             box-sizing:border-box;">
+      <option value="bombadeaceite">Bomba de aceite</option>
+      <option value="fijaciones">Fijaciones</option>
+      <option value="electrico">Eléctrico</option>
+      <option value="plomeria">Plomería</option>
+      <option value="pintura">Pintura</option>
+      <option value="seguridad">Seguridad</option>
+      <option value="general">General</option>
     </select>
-    <!-- Toggle: juntar o repartir (solo en modo categoría) -->
-    <div id="toggleModoDistribucion" style="
-      display: none; margin-top: 12px;
-      background: #1e1e2e; padding: 12px; border-radius: 8px;
-      border: 1px solid #333;
+
+    <label style="display:block; margin-bottom:6px; font-size:13px; color:#aaa;">
+      Cantidad:
+    </label>
+    <input id="inputCantidad" type="number" min="1" value="1"
+      style="width:100%; padding:10px; margin-bottom:14px;
+             border-radius:8px; border:1px solid #333;
+             background:#2a2a3e; color:white; font-size:14px;
+             box-sizing:border-box;">
+
+    <!-- SECCIÓN DE UBICACIÓN -->
+    <div style="
+      background: #2a2a3e; padding: 15px;
+      border-radius: 10px; margin-bottom: 20px;
     ">
-      <p style="margin: 0 0 10px 0; font-size: 12px; color: #aaa;">
-        ¿Cómo quieres distribuir los items?
+      <p style="margin: 0 0 10px 0; font-size: 13px; color: #aaa;">
+        Ubicación del item
       </p>
-      <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; font-size: 13px;">
-        <input type="radio" name="modoDistribucion" value="juntar" checked
-          style="width: auto; margin: 0;">
-        <span>📦 Todos en la misma celda</span>
-      </label>
-      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
-        <input type="radio" name="modoDistribucion" value="repartir"
-          style="width: auto; margin: 0;">
-        <span>↔️ Repartir en celdas consecutivas</span>
-      </label>
-      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
-        <input type="radio" name="modoDistribucion" value="asignar"
-          style="width: auto; margin: 0;">
-        <span>🎯 Asignar celda a cada item</span>
-      </label>
-    </div>
-        <!-- Lista de asignación por item (solo en modo "asignar") -->
-    <div id="listaAsignacionItems" style="
-      display: none; margin-top: 12px;
-      background: #1e1e2e; padding: 12px; border-radius: 8px;
-      border: 1px solid #333; max-height: 300px; overflow-y: auto;
-    ">
-      <p style="margin: 0 0 10px 0; font-size: 12px; color: #aaa;">
-        Asigna una celda a cada item:
+
+      <div id="avisoUbicacion" style="
+        display: none;
+        background: #1a2a1a; padding: 12px;
+        border-radius: 8px; margin-bottom: 10px;
+        border-left: 4px solid #4aff4a;
+        font-family: monospace; font-size: 14px;
+        color: #4aff4a;
+        text-align: center;
+      ">—</div>
+
+      <button id="btnEscanearUbicacion" style="
+        width: 100%; padding: 12px;
+        background: #7a4ab8; color: white;
+        border: none; border-radius: 8px; cursor: pointer;
+        font-size: 14px; font-weight: bold;
+      ">Escanear QR del estante</button>
+
+      <p style="
+        text-align: center; font-size: 11px;
+        color: #888; margin: 10px 0 0 0;
+      ">
+        ¿No tienes el QR?
+        <a href="#" id="linkUbicacionManual" style="
+          color: #4a7ab8; text-decoration: underline;
+          cursor: pointer;
+        ">Escribe el código manualmente</a>
       </p>
-      <div id="contenidoAsignacionItems"></div>
+
+      <input type="hidden" id="inputEstante" value="">
+      <input type="hidden" id="inputRepisa" value="0">
+      <input type="hidden" id="inputSeccion" value="A">
     </div>
+
+    <div style="display:flex; gap:10px;">
+      <button id="btnCancelar" style="
+        flex: 1; padding: 12px;
+        background: #444; color: white;
+        border: none; border-radius: 8px;
+        cursor: pointer; font-size: 14px;
+      ">Cancelar</button>
+
+      <button id="btnRegistrar" style="
+        flex: 2; padding: 12px;
+        background: #4a7ab8; color: white;
+        border: none; border-radius: 8px;
+        cursor: pointer; font-size: 14px; font-weight: bold;
+      ">Registrar</button>
+    </div>
+
+    <div id="qrPreview" style="margin-top: 20px; text-align: center;"></div>
   </div>
 
-  <!-- Paso 2: escanear item -->
-  <div id="pasoItem" style="
-    background: #2a2a3e; padding: 18px; border-radius: 10px;
-    margin-bottom: 15px; opacity: 0.5;
-    pointer-events: none;
+  <!-- Panel de inventario -->
+  <div id="panelInventario" style="
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1e1e2e; color: white;
+    padding: 25px; border-radius: 16px;
+    font-family: Arial;
+    width: 90%; max-width: 800px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    display: none; z-index: 200;
   ">
-    <p style="margin: 0 0 12px 0; font-size: 14px; font-weight: bold;">
-       Paso 2: ¿Qué item vas a mover?
-    </p>
-    <p style="margin: 0 0 12px 0; font-size: 12px; color: #aaa;">
-      Escanea el QR del item o escribe su código manualmente.
-    </p>
-    <input id="inputItemMover" type="text" placeholder="Ej: FERR-1234"
-      style="width: 100%; padding: 10px; margin-bottom: 10px;
+    <h2 style="margin: 0 0 15px 0; text-align: center;">
+      Inventario de items
+    </h2>
+    <button id="btnVolverCategorias" style="
+      display: none;
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      background: #444;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+    ">Volver a categorías</button>
+
+    <input id="inputBuscar" type="text" placeholder="Buscar por nombre, código, categoría..."
+      style="width: 100%; padding: 12px; margin-bottom: 15px;
              border-radius: 8px; border: 1px solid #333;
-             background: #1e1e2e; color: white; font-size: 13px;
-             box-sizing: border-box; font-family: monospace;">
-    <button id="btnEscanearItem" style="
-      width: 100%; padding: 10px;
-      background: #4a7ab8; color: white;
-      border: none; border-radius: 8px; cursor: pointer;
-      font-size: 13px; font-weight: bold;
-    "> Escanear QR del item (próximamente)</button>
+             background: #2a2a3e; color: white; font-size: 14px;
+             box-sizing: border-box;">
+
+    <p id="contadorItems" style="
+      text-align: center; color: #aaa; font-size: 13px; margin-bottom: 15px;
+    ">Cargando...</p>
+
+    <div id="listaItems" style="
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    "></div>
+
+    <button id="btnCerrarInventario" style="
+      width: 100%; padding: 12px; margin-top: 20px;
+      background: #444; color: white; border: none;
+      border-radius: 8px; cursor: pointer; font-size: 14px;
+    ">Cerrar</button>
   </div>
 
-  <!-- Vista previa / resumen -->
-  <div id="resumenMover" style="
-    display: none; background: #1a2a1a; padding: 15px;
-    border-radius: 10px; margin-bottom: 15px; font-size: 13px;
-    border-left: 4px solid #4aff4a;
-  "></div>
+  <!-- Ficha detallada de un item -->
+  <div id="panelFicha" style="
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1e1e2e; color: white;
+    padding: 28px; border-radius: 16px;
+    font-family: Arial;
+    width: 90%; max-width: 400px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    display: none; z-index: 250;
+    text-align: center;
+  ">
+    <button id="btnVolverInventario" style="
+      position: absolute; top: 15px; left: 15px;
+      padding: 6px 12px; background: #444; color: white;
+      border: none; border-radius: 6px; cursor: pointer;
+      font-size: 13px;
+    ">Volver</button>
 
-  <!-- Botones de acción -->
-  <div style="display: flex; gap: 10px;">
-    <button id="btnCancelarMoverQR" style="
-      flex: 1; padding: 12px;
+    <h2 id="fichaNombre" style="
+      margin: 30px 0 8px 0; font-size: 22px;
+    ">Nombre del item</h2>
+
+    <p id="fichaCodigo" style="
+      font-size: 14px; color: #4aff4a; margin-bottom: 20px;
+      font-family: monospace;
+    ">FERR-XXXX</p>
+
+    <div id="fichaQR" style="
+      margin: 0 auto 20px auto; display: inline-block;
+      background: white; padding: 12px; border-radius: 10px;
+    "></div>
+
+    <div style="
+      text-align: left; background: #2a2a3e;
+      padding: 15px; border-radius: 10px; margin-bottom: 20px;
+      font-size: 14px;
+    ">
+      <p style="margin: 6px 0;">
+        <span style="color:#aaa;">Categoría:</span>
+        <b id="fichaCategoria">—</b>
+      </p>
+      <p style="margin: 6px 0;">
+        <span style="color:#aaa;">Cantidad:</span>
+        <b id="fichaCantidad">—</b>
+      </p>
+      <p style="margin: 6px 0;">
+        <span style="color:#aaa;">Ubicación:</span>
+        <b id="fichaUbicacion">—</b>
+      </p>
+      <p style="margin: 6px 0;">
+        <span style="color:#aaa;">Registrado:</span>
+        <b id="fichaFecha">—</b>
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+      <button id="btnVerEn3D" style="
+        flex: 1; padding: 12px;
+        background: #4a7ab8; color: white; border: none;
+        border-radius: 8px; cursor: pointer; font-size: 14px;
+        font-weight: bold;
+      ">Ver en 3D</button>
+
+      <button id="btnDescargarFichaQR" style="
+        flex: 1; padding: 12px;
+        background: #2a7a2a; color: white; border: none;
+        border-radius: 8px; cursor: pointer; font-size: 14px;
+        font-weight: bold;
+      ">Descargar QR</button>
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+      <button id="btnMoverItem" style="
+        flex: 1; padding: 12px;
+        background: #b87a2a; color: white; border: none;
+        border-radius: 8px; cursor: pointer; font-size: 14px;
+        font-weight: bold;
+      ">Mover item</button>
+
+      <button id="btnEliminarItem" style="
+        flex: 1; padding: 12px;
+        background: #a32828; color: white; border: none;
+        border-radius: 8px; cursor: pointer; font-size: 14px;
+        font-weight: bold;
+      ">Eliminar</button>
+    </div>
+  </div>
+
+  <!-- Modal para mover item con QR -->
+  <div id="panelMoverQR" style="
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1e1e2e; color: white;
+    padding: 28px; border-radius: 16px;
+    font-family: Arial;
+    width: 90%; max-width: 420px;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    display: none; z-index: 300;
+  ">
+    <button id="btnCerrarMoverQR" style="
+      position: absolute; top: 15px; right: 15px;
+      padding: 6px 10px; background: #444; color: white;
+      border: none; border-radius: 6px; cursor: pointer; font-size: 13px;
+    ">X</button>
+
+    <h2 style="margin: 0 0 20px 0; text-align: center; font-size: 20px;">
+      Mover item
+    </h2>
+
+    <div id="pasoEstante" style="
+      background: #2a2a3e; padding: 18px; border-radius: 10px;
+      margin-bottom: 15px;
+    ">
+      <p style="margin: 0 0 12px 0; font-size: 14px; font-weight: bold;">
+        Paso 1: ¿A qué estante lo vas a mover?
+      </p>
+      <p style="margin: 0 0 12px 0; font-size: 12px; color: #aaa;">
+        Escanea el QR del estante/celda de destino o escribe el código manualmente.
+      </p>
+      <input id="inputEstanteDestino" type="text" placeholder="Ej: EST-IZQ-01-R2-E"
+        style="width: 100%; padding: 10px; margin-bottom: 10px;
+               border-radius: 8px; border: 1px solid #333;
+               background: #1e1e2e; color: white; font-size: 13px;
+               box-sizing: border-box; font-family: monospace;">
+      <button id="btnEscanearEstante" style="
+        width: 100%; padding: 10px;
+        background: #4a7ab8; color: white;
+        border: none; border-radius: 8px; cursor: pointer;
+        font-size: 13px; font-weight: bold;
+      ">Escanear QR del estante</button>
+    </div>
+
+    <div style="
+      background: #2a2a3e; padding: 18px; border-radius: 10px;
+      margin-bottom: 15px;
+    ">
+      <p style="margin: 0 0 12px 0; font-size: 14px; font-weight: bold;">
+        ¿Qué vas a mover?
+      </p>
+      <div style="display: flex; gap: 10px;">
+        <button id="btnModoItem" style="
+          flex: 1; padding: 12px;
+          background: #4a7ab8; color: white; border: 2px solid #4a7ab8;
+          border-radius: 8px; cursor: pointer; font-size: 13px;
+          font-weight: bold;
+        ">Un item</button>
+
+        <button id="btnModoCategoria" style="
+          flex: 1; padding: 12px;
+          background: #2a2a3e; color: #aaa; border: 2px solid #444;
+          border-radius: 8px; cursor: pointer; font-size: 13px;
+          font-weight: bold;
+        ">Una categoría</button>
+      </div>
+
+      <select id="inputCategoriaMover" style="
+        display: none; width: 100%; padding: 10px; margin-top: 12px;
+        border-radius: 8px; border: 1px solid #333;
+        background: #1e1e2e; color: white; font-size: 14px;
+        box-sizing: border-box;
+      ">
+        <option value="bombadeaceite">Bomba de aceite</option>
+        <option value="fijaciones">Fijaciones</option>
+        <option value="electrico">Eléctrico</option>
+        <option value="plomeria">Plomería</option>
+        <option value="pintura">Pintura</option>
+        <option value="seguridad">Seguridad</option>
+        <option value="general">General</option>
+      </select>
+
+      <div id="toggleModoDistribucion" style="
+        display: none; margin-top: 12px;
+        background: #1e1e2e; padding: 12px; border-radius: 8px;
+        border: 1px solid #333;
+      ">
+        <p style="margin: 0 0 10px 0; font-size: 12px; color: #aaa;">
+          ¿Cómo quieres distribuir los items?
+        </p>
+        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; font-size: 13px;">
+          <input type="radio" name="modoDistribucion" value="juntar" checked
+            style="width: auto; margin: 0;">
+          <span>Todos en la misma celda</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+          <input type="radio" name="modoDistribucion" value="repartir"
+            style="width: auto; margin: 0;">
+          <span>Repartir en celdas consecutivas</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+          <input type="radio" name="modoDistribucion" value="asignar"
+            style="width: auto; margin: 0;">
+          <span>Asignar celda a cada item</span>
+        </label>
+      </div>
+
+      <div id="listaAsignacionItems" style="
+        display: none; margin-top: 12px;
+        background: #1e1e2e; padding: 12px; border-radius: 8px;
+        border: 1px solid #333; max-height: 300px; overflow-y: auto;
+      ">
+        <p style="margin: 0 0 10px 0; font-size: 12px; color: #aaa;">
+          Asigna una celda a cada item:
+        </p>
+        <div id="contenidoAsignacionItems"></div>
+      </div>
+    </div>
+
+    <div id="pasoItem" style="
+      background: #2a2a3e; padding: 18px; border-radius: 10px;
+      margin-bottom: 15px; opacity: 0.5;
+      pointer-events: none;
+    ">
+      <p style="margin: 0 0 12px 0; font-size: 14px; font-weight: bold;">
+        Paso 2: ¿Qué item vas a mover?
+      </p>
+      <p style="margin: 0 0 12px 0; font-size: 12px; color: #aaa;">
+        Escanea el QR del item o escribe su código manualmente.
+      </p>
+      <input id="inputItemMover" type="text" placeholder="Ej: FERR-1234"
+        style="width: 100%; padding: 10px; margin-bottom: 10px;
+               border-radius: 8px; border: 1px solid #333;
+               background: #1e1e2e; color: white; font-size: 13px;
+               box-sizing: border-box; font-family: monospace;">
+      <button id="btnEscanearItem" style="
+        width: 100%; padding: 10px;
+        background: #4a7ab8; color: white;
+        border: none; border-radius: 8px; cursor: pointer;
+        font-size: 13px; font-weight: bold;
+      ">Escanear QR del item</button>
+    </div>
+
+    <div id="resumenMover" style="
+      display: none; background: #1a2a1a; padding: 15px;
+      border-radius: 10px; margin-bottom: 15px; font-size: 13px;
+      border-left: 4px solid #4aff4a;
+    "></div>
+
+    <div style="display: flex; gap: 10px;">
+      <button id="btnCancelarMoverQR" style="
+        flex: 1; padding: 12px;
+        background: #444; color: white; border: none;
+        border-radius: 8px; cursor: pointer; font-size: 14px;
+      ">Cancelar</button>
+
+      <button id="btnConfirmarMoverQR" style="
+        flex: 2; padding: 12px;
+        background: #4a7ab8; color: white; border: none;
+        border-radius: 8px; cursor: pointer; font-size: 14px;
+        font-weight: bold; opacity: 0.5; pointer-events: none;
+      ">Confirmar movimiento</button>
+    </div>
+  </div>
+
+  <!-- Panel de códigos de slots -->
+  <div id="panelCodigos" style="
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1e1e2e; color: white;
+    padding: 25px; border-radius: 16px;
+    font-family: Arial;
+    width: 90%; max-width: 900px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    display: none; z-index: 200;
+  ">
+    <h2 style="margin: 0 0 15px 0; text-align: center;">
+      Códigos de estantes
+    </h2>
+
+    <p style="text-align: center; color: #aaa; font-size: 13px; margin-bottom: 15px;">
+      Estos son los códigos de cada slot del estante. Úsalos en el modal de "Mover item".
+    </p>
+
+    <input id="inputBuscarCodigo" type="text" placeholder="Buscar código (ej: R2-E, EST-IZQ-01)..."
+      style="width: 100%; padding: 12px; margin-bottom: 15px;
+             border-radius: 8px; border: 1px solid #333;
+             background: #2a2a3e; color: white; font-size: 14px;
+             box-sizing: border-box;">
+
+    <p id="contadorCodigos" style="
+      text-align: center; color: #aaa; font-size: 13px; margin-bottom: 15px;
+    ">—</p>
+
+    <div id="listaCodigos" style="
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 8px;
+    "></div>
+
+    <button id="btnCerrarCodigos" style="
+      width: 100%; padding: 12px; margin-top: 20px;
+      background: #444; color: white; border: none;
+      border-radius: 8px; cursor: pointer; font-size: 14px;
+    ">Cerrar</button>
+  </div>
+
+  <!-- Panel: Items de un estante o slot -->
+  <div id="panelEstante" style="
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1e1e2e; color: white;
+    padding: 25px; border-radius: 16px;
+    font-family: Arial;
+    width: 90%; max-width: 800px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    display: none; z-index: 200;
+  ">
+    <h2 id="panelEstanteTitulo" style="margin: 0 0 8px 0; text-align: center;">
+      Estante
+    </h2>
+
+    <p id="panelEstanteSubtitulo" style="
+      text-align: center; color: #aaa; font-size: 13px; margin-bottom: 20px;
+    ">Cargando...</p>
+
+    <input id="inputBuscarEstante" type="text" placeholder="Buscar dentro del estante..."
+      style="width: 100%; padding: 12px; margin-bottom: 15px;
+             border-radius: 8px; border: 1px solid #333;
+             background: #2a2a3e; color: white; font-size: 14px;
+             box-sizing: border-box;">
+
+    <div id="listaItemsEstante" style="
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    "></div>
+
+    <button id="btnCerrarEstante" style="
+      width: 100%; padding: 12px; margin-top: 20px;
+      background: #444; color: white; border: none;
+      border-radius: 8px; cursor: pointer; font-size: 14px;
+    ">Cerrar</button>
+  </div>
+
+  <!-- Modal del escáner de QR -->
+  <div id="panelEscaner" style="
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1e1e2e; color: white;
+    padding: 25px; border-radius: 16px;
+    font-family: Arial;
+    width: 90%; max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    display: none; z-index: 400;
+    text-align: center;
+  ">
+    <h2 style="margin: 0 0 15px 0; font-size: 20px;">
+      Escanear código QR
+    </h2>
+
+    <p style="color: #aaa; font-size: 13px; margin-bottom: 20px;">
+      Apunta la cámara al código QR del item, estante o slot.
+    </p>
+
+    <div id="lectorQR" style="
+      width: 100%; border-radius: 12px;
+      overflow: hidden; background: #000;
+      margin-bottom: 20px;
+    "></div>
+
+    <p id="estadoEscaner" style="
+      color: #4aff4a; font-size: 13px; margin-bottom: 20px;
+    ">Iniciando cámara...</p>
+
+    <button id="btnCerrarEscaner" style="
+      width: 100%; padding: 12px;
       background: #444; color: white; border: none;
       border-radius: 8px; cursor: pointer; font-size: 14px;
     ">Cancelar</button>
-
-    <button id="btnConfirmarMoverQR" style="
-      flex: 2; padding: 12px;
-      background: #4a7ab8; color: white; border: none;
-      border-radius: 8px; cursor: pointer; font-size: 14px;
-      font-weight: bold; opacity: 0.5; pointer-events: none;
-    ">Confirmar movimiento</button>
   </div>
-</div>
-<!-- Panel de códigos de slots -->
-<div id="panelCodigos" style="
-  position: fixed; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  background: #1e1e2e; color: white;
-  padding: 25px; border-radius: 16px;
-  font-family: Arial;
-  width: 90%; max-width: 900px;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-  display: none; z-index: 200;
-">
-  <h2 style="margin: 0 0 15px 0; text-align: center;">
-     Códigos de estantes
-  </h2>
-
-  <p style="text-align: center; color: #aaa; font-size: 13px; margin-bottom: 15px;">
-    Estos son los códigos de cada slot del estante. Úsalos en el modal de "Mover item".
-  </p>
-
-  <!-- Buscador -->
-  <input id="inputBuscarCodigo" type="text" placeholder="🔍 Buscar código (ej: R2-E, EST-IZQ-01)..."
-    style="width: 100%; padding: 12px; margin-bottom: 15px;
-           border-radius: 8px; border: 1px solid #333;
-           background: #2a2a3e; color: white; font-size: 14px;
-           box-sizing: border-box;">
-
-  <!-- Contador -->
-  <p id="contadorCodigos" style="
-    text-align: center; color: #aaa; font-size: 13px; margin-bottom: 15px;
-  ">—</p>
-
-  <!-- Lista de códigos -->
-  <div id="listaCodigos" style="
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 8px;
-  "></div>
-
-  <!-- Botón cerrar -->
-  <button id="btnCerrarCodigos" style="
-    width: 100%; padding: 12px; margin-top: 20px;
-    background: #444; color: white; border: none;
-    border-radius: 8px; cursor: pointer; font-size: 14px;
-  ">Cerrar</button>
-</div>
-<!-- Panel: Items de un estante o slot -->
-<div id="panelEstante" style="
-  position: fixed; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  background: #1e1e2e; color: white;
-  padding: 25px; border-radius: 16px;
-  font-family: Arial;
-  width: 90%; max-width: 800px;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-  display: none; z-index: 200;
-">
-  <h2 id="panelEstanteTitulo" style="margin: 0 0 8px 0; text-align: center;">
-     Estante
-  </h2>
-
-  <p id="panelEstanteSubtitulo" style="
-    text-align: center; color: #aaa; font-size: 13px; margin-bottom: 20px;
-  ">Cargando...</p>
-
-  <!-- Buscador -->
-  <input id="inputBuscarEstante" type="text" placeholder="🔍 Buscar dentro del estante..."
-    style="width: 100%; padding: 12px; margin-bottom: 15px;
-           border-radius: 8px; border: 1px solid #333;
-           background: #2a2a3e; color: white; font-size: 14px;
-           box-sizing: border-box;">
-
-  <!-- Lista de items -->
-  <div id="listaItemsEstante" style="
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 12px;
-  "></div>
-
-  <!-- Botón cerrar -->
-  <button id="btnCerrarEstante" style="
-    width: 100%; padding: 12px; margin-top: 20px;
-    background: #444; color: white; border: none;
-    border-radius: 8px; cursor: pointer; font-size: 14px;
-  ">Cerrar</button>
-</div>
-<!-- Modal del escáner de QR -->
-<div id="panelEscaner" style="
-  position: fixed; top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  background: #1e1e2e; color: white;
-  padding: 25px; border-radius: 16px;
-  font-family: Arial;
-  width: 90%; max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-  display: none; z-index: 400;
-  text-align: center;
-">
-  <h2 style="margin: 0 0 15px 0; font-size: 20px;">
-     Escanear código QR
-  </h2>
-
-  <p style="color: #aaa; font-size: 13px; margin-bottom: 20px;">
-    Apunta la cámara al código QR del item, estante o slot.
-  </p>
-
-  <!-- Lector de QR -->
-  <div id="lectorQR" style="
-    width: 100%; border-radius: 12px;
-    overflow: hidden; background: #000;
-    margin-bottom: 20px;
-  "></div>
-
-  <!-- Estado -->
-  <p id="estadoEscaner" style="
-    color: #4aff4a; font-size: 13px; margin-bottom: 20px;
-  ">Iniciando cámara...</p>
-
-  <!-- Botón cerrar -->
-  <button id="btnCerrarEscaner" style="
-    width: 100%; padding: 12px;
-    background: #444; color: white; border: none;
-    border-radius: 8px; cursor: pointer; font-size: 14px;
-  ">Cancelar</button>
-</div>
 </body>
 </html>
