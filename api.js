@@ -1,56 +1,36 @@
-// api.js — reemplaza a supabase.js
-// api.js
-const API = import.meta.env.VITE_API_URL || 'https://wttbjctycyfrpvvwomyz.supabase.co'; 
+import { createClient } from '@supabase/supabase-js';
 
-if (!API) throw new Error('Falta VITE_API_URL en .env.local'); 
-if (!API) throw new Error('Falta VITE_API_URL en .env.local');
+// PON TUS DATOS AQUÍ:
+const supabaseUrl = 'https://wttbjctycyfrpvvwomyz.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0dGJqY3R5Y3lmcnB2dndvbXl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2NzYyNjUsImV4cCI6MjEwNjI1MjI2NX0.NchIV1Gu9Dv4uPySHAjRIrmkx4X4GXELZRgDpvh2Now';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-async function request(url, options = {}) {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json' },
-    ...options,
-  });
-  const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
-  if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+export async function obtenerTodos() {
+  const { data, error } = await supabase.from('items').select('*').order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data || [];
+}
+
+export async function registrarItem({ nombre, categoria, cantidad, estante, repisa, seccion }) {
+  const { data, error } = await supabase.from('items').insert([{ nombre, categoria, cantidad, estante, repisa, seccion }]).select().single();
+  if (error) throw new Error(error.message);
   return data;
 }
 
-export async function registrarItem({ nombre, categoria, cantidad, estante, repisa = 0, seccion = 'A' }) {
-  return request(`${API}/items.php?action=create`, {
-    method: 'POST',
-    body: JSON.stringify({ nombre, categoria, cantidad, estante, repisa, seccion }),
-  });
-}
-
 export async function buscarItemPorCodigo(codigo) {
-  try {
-    return await request(`${API}/items.php?action=get&codigo=${encodeURIComponent(codigo)}`);
-  } catch (e) {
-    if (e.message.includes('no encontrado')) return null;
-    throw e;
-  }
-}
-
-export async function obtenerTodos() {
-  return request(`${API}/items.php?action=list`);
+  const { data, error } = await supabase.from('items').select('*').eq('codigo', codigo).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
 export async function eliminarItem(codigo) {
-  try {
-    await request(`${API}/items.php?action=delete`, {
-      method: 'POST',
-      body: JSON.stringify({ codigo }),
-    });
-    return true;
-  } catch {
-    return false;
-  }
+  const { error } = await supabase.from('items').delete().eq('codigo', codigo);
+  if (error) { console.error(error); return false; }
+  return true;
 }
 
 export async function actualizarUbicacion(codigo, estante, repisa, seccion) {
-  return request(`${API}/items.php?action=update-ubicacion`, {
-    method: 'POST',
-    body: JSON.stringify({ codigo, estante, repisa, seccion }),
-  });
+  const { data, error } = await supabase.from('items').update({ estante, repisa, seccion }).eq('codigo', codigo).select().single();
+  if (error) throw new Error(error.message);
+  return data;
 }
