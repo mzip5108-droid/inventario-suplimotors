@@ -1,6 +1,6 @@
 // api.js — reemplaza a supabase.js
 // api.js
-const API = import.meta.env.VITE_API_URL || 'http://localhost/inventario-backend'; 
+const API = import.meta.env.VITE_API_URL || 'https://wttbjctycyfrpvvwomyz.supabase.co'; 
 
 if (!API) throw new Error('Falta VITE_API_URL en .env.local'); 
 if (!API) throw new Error('Falta VITE_API_URL en .env.local');
