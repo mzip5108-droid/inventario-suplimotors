@@ -1,12 +1,9 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/inventario-suplimotors/',
-  server: {
-    host: true,
-  },
+  base: '/inventario-suplimotors/', // <-- Esto es VITAL para GitHub Pages
   build: {
     outDir: 'dist',
-    sourcemap: false,
+    emptyOutDir: true,
   },
 });
