@@ -7,8 +7,7 @@ import { registrarItem, buscarItemPorCodigo, obtenerTodos, eliminarItem, actuali
 // ============================================
 // 1) CONFIGURACION Y CONSTANTES
 // ============================================
-console.log('VITE_API_URL =', import.meta.env.VITE_API_URL);
-console.log('Modo:', import.meta.env.MODE);
+
 
 const ANCHO_CUARTO  = 7.5;
 const ALTO_CUARTO   = 4;
