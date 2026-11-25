@@ -1805,7 +1805,7 @@ const USUARIOS = {
   empleado: { pass: '1234',     rol: 'empleado' }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+setTimeout(() => {
   // Si ya hay sesión guardada, no mostramos el login
   if (sessionStorage.getItem('inventario_logged') === '1') {
     document.getElementById('loginScreen').style.display = 'none';
@@ -1861,10 +1861,13 @@ styleShake.textContent = `
   }
 `;
 document.head.appendChild(styleShake);
-// Boton de logout
-document.getElementById('btnLogout').addEventListener('click', () => {
-  if (confirm('Cerrar sesion?')) {
-    sessionStorage.clear();
-    location.reload();
-  }
-});
+// Boton de logout 
+const btnLogoutElement = document.getElementById('btnLogout');
+if (btnLogoutElement) {
+  btnLogoutElement.addEventListener('click', () => {
+    if (confirm('Cerrar sesion?')) {
+      sessionStorage.clear();
+      location.reload();
+    }
+  });
+}
